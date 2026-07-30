@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>The handler abstraction for the Loom package family. Pure types, so a domain project can declare handlers without taking a dependency on a container.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Loom.Results\Loom.Results.csproj" />
+    </ItemGroup>
+
+</Project>

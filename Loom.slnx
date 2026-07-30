@@ -21,8 +21,14 @@
     <Project Path="tests/Loom.Entities.Tests/Loom.Entities.Tests.csproj" />
   </Folder>
   <Folder Name="/Handlers/" />
-  <Folder Name="/Handlers/src/" />
-  <Folder Name="/Handlers/tests/" />
+  <Folder Name="/Handlers/src/">
+    <Project Path="src/Loom.Handlers.Abstractions/Loom.Handlers.Abstractions.csproj" />
+    <Project Path="src/Loom.Handlers/Loom.Handlers.csproj" />
+  </Folder>
+  <Folder Name="/Handlers/tests/">
+    <Project Path="tests/Loom.Handlers.Abstractions.Tests/Loom.Handlers.Abstractions.Tests.csproj" />
+    <Project Path="tests/Loom.Handlers.Tests/Loom.Handlers.Tests.csproj" />
+  </Folder>
   <Folder Name="/Paging/" />
   <Folder Name="/Paging/src/">
     <Project Path="src/Loom.Paging/Loom.Paging.csproj" />
