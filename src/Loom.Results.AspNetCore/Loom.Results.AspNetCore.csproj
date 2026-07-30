@@ -1,0 +1,17 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Translates a Loom result into an HTTP response: an error category becomes a status code, and an error becomes a problem details payload.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Loom.Results\Loom.Results.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- The named dependency this package declares in its identifier. A framework reference is not
+             a package reference, but it restricts consumption to ASP.NET Core hosts just as firmly. -->
+        <FrameworkReference Include="Microsoft.AspNetCore.App" />
+    </ItemGroup>
+
+</Project>

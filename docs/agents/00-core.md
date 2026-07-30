@@ -88,6 +88,7 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 - **Entities are classes. Value objects and domain events are `sealed record`s.** Entities compare by identity, so structural equality is wrong for them; everything else in the domain is value-like and records are right.
 - **Only aggregate roots get a `DbSet<>`.** Child entities are reached through their root.
 - **`Id<TEntity>` ordering is not creation order.** Version 7 GUIDs are only millisecond-granular and are not monotonic within a millisecond. Never paginate on an id, and never use one to decide what happened first — sort on an explicit timestamp column.
+- **Declare `WithDomainEventFailures()` last in the chain, after `WithValidation()`.** A domain event handler reporting a failure abandons the save, which an object-relational mapper can only express by throwing; this decorator turns it back into the failure the handler reported, so the caller sees the right category instead of a server error. It must sit innermost, or it will also swallow exceptions from other decorators and report them as domain event failures.
 - **Ordinary domain events dispatch before the commit; deferred ones after.** An ordinary handler may change data atomically with the operation but must not reach outside the process, because a rollback cannot unsend an email. A `IDeferredDomainEvent` handler may reach outside the process and **must be idempotent**, since delivery is at least once. Which one applies is declared on the event.
 
 Register identity conversion once per assembly, from `ConfigureConventions` — not `OnModelCreating`, where discovery has already skipped identities that are not keys:
@@ -118,7 +119,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 - **A failed result carries exactly one error.** Several validation failures are one `ValidationError` whose metadata is a field→messages map, which maps straight onto the ProblemDetails `errors` extension.
 - **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
 - **Never ignore a returned `Result`.** Failure-as-a-value is a value you can discard, and nothing currently warns you — `IDE0058` is off because it fires on every fluent call. Until the analyzer exists, this is caught in review. Use `_ = ...` when you genuinely mean to discard one.
-- Category-to-transport mapping lives in exactly one host extension method, never inline in a slice.
+- **Category-to-transport mapping comes from a Loom package, never inline in a slice.** In an API that is `Loom.Results.AspNetCore`: `result.ToHttpResult()`. If a project wants different titles or extra members, it builds the problem details with `ToProblemDetails()` and changes it — the package has no options type on purpose.
 
 ## 8. Configuration and authorization
 

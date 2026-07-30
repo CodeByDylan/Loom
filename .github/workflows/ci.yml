@@ -22,6 +22,10 @@ jobs:
         with:
           global-json-file: global.json
 
+      # Markdown is neither built nor formatted, so nothing else would notice a corrupted document.
+      # Cheap and independent of the build, so it runs first.
+      - run: scripts/check-docs.sh
+
       - run: dotnet restore
 
       # This is the block required before claiming `done`.

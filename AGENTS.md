@@ -1,5 +1,4 @@
-| 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. || 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` |
-| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, and an optional outbox. | A database provider — the consumer picks one. Cursor paging. |# AGENTS.md
+# AGENTS.md
 
 Rules for working **on Loom itself**. Loom is a family of foundational .NET packages,
 consumed by other projects. Rules for those consuming projects live in
@@ -18,7 +17,7 @@ Packages that exist today:
 | `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` and `IHandler<TRequest>`, as pure types, so a consumer's domain project can declare handlers. | Anything touching a container. |
 | `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. | A dispatcher. See §5. |
 | `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
-| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, and an optional outbox. | A database provider — the consumer picks one. Cursor paging. |
+| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. |
 
 Every package listed has code. There are no placeholder projects left.
 
@@ -37,9 +36,10 @@ per-area virtual folders — virtual structure and disk structure are allowed to
 
 ## 3. Build and verify
 
-Run all four, in order, before reporting work complete:
+Run all five, in order, before reporting work complete:
 
 ```bash
+scripts/check-docs.sh               # markdown is neither built nor formatted
 dotnet format                       # fixes formatting in place
 dotnet build                        # warnings are errors
 dotnet test                         # TUnit, via Microsoft.Testing.Platform
@@ -49,7 +49,8 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 - Run `dotnet format` (fixing), not verify-only. Do not hand-edit whitespace to satisfy the check.
 - If `dotnet format` touches files unrelated to your change, revert those files. Formatting-only churn does not belong in a feature diff.
 - `.editorconfig` is the authority on code style, not this file. To change how code looks, edit `.editorconfig`. Do not add style rules here.
-- `.github/workflows/ci.yml` runs exactly this block on push and PR.
+- **Never edit a markdown table with a pattern substitution.** Two documents were silently corrupted that way — a table row fused onto a heading, and the same onto a template marker, which then leaked into every assembled consumer file. `scripts/check-docs.sh` now catches both, but the habit is the actual defect: edit tables by replacing exact text.
+- `.github/workflows/ci.yml` runs the same checks on push and PR, with one deliberate difference: it has no fixing `dotnet format` step, only the verify. CI cannot commit fixes, so formatting is fixed locally and merely confirmed there.
 
 ## 4. Dependency policy
 
@@ -62,11 +63,12 @@ of letting a tier become a web of mutual references.
 | 0 | `Loom.Results` | **Nothing.** BCL only. |
 | 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. |
 | 2 | `Loom.Handlers` | Tiers 0–1 + `Microsoft.Extensions.*` **Abstractions** packages only. |
-| 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` | Tiers 0–2 + one third-party dependency, named in the package ID. |
+| 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore`, `Loom.Results.AspNetCore` | Tiers 0–2 + one third-party dependency, named in the package ID. |
 
 - Tier 0 is absolute. `Loom.Results` appears in every consumer's method signatures, so any dependency it takes is in every consumer's transitive graph forever.
 - At Tier 2, reference abstractions packages only — `Microsoft.Extensions.Logging.Abstractions`, never `Microsoft.Extensions.Logging`. The non-abstractions package is the one that shows up in application code; it does not belong in a library.
 - Third-party coupling is declared in the package ID: `Loom.Persistence.EntityFrameworkCore`, never a `Loom.Persistence` that quietly pulls in EF Core. A consumer should be able to read their NuGet list and know their coupling.
+- **A `FrameworkReference` counts as the named dependency.** The tier rules talk about package references throughout, so a framework reference can look free. It is not: referencing `Microsoft.AspNetCore.App` restricts a package to ASP.NET Core hosts as firmly as any dependency, so it puts the package at Tier 3 and must be declared in the package ID the same way.
 - "One third-party dependency" means one *product*, not one NuGet identifier. `Loom.Persistence.EntityFrameworkCore` references both `Microsoft.EntityFrameworkCore` and its `.Relational` companion, because mapping a table it defines is impossible without the latter. A second, unrelated product would not be permitted.
 - A Tier 3 package stays **provider-neutral** where the product allows it. `Loom.Persistence.EntityFrameworkCore` does not reference Npgsql; a consumer chooses its own provider. Naming a provider would make the package a second opinion about the database.
 - The `dotnet-ef` tool in `dotnet-tools.json` serves `Loom.Persistence.EntityFrameworkCore`. EF Core must not appear in Tiers 0–2.

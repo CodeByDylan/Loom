@@ -37,7 +37,8 @@ internal sealed class Endpoint : IEndpoint
 
 - **Every non-2xx response is `ProblemDetails`** (RFC 9457). No bespoke error envelopes.
 - **Validation failures populate the `errors` extension** rather than inventing a parallel shape.
-- **`ToHttpResult()` is the single mapping point** from a `Loom.Results` category to a status code. It lives in one host extension. A slice never writes a status code itself.
+- **`ToHttpResult()` is the single mapping point** from a `Loom.Results` category to a status code, and it comes from `Loom.Results.AspNetCore`. A slice never writes a status code itself.
+- **A trace identifier comes from the framework, not from Loom.** `AddProblemDetails(options => options.CustomizeProblemDetails = ...)` runs for these responses, so enrich there rather than in a slice.
 - Typed results (`Results<Ok<T>, ProblemHttpResult>`) where they add OpenAPI accuracy; not as ceremony.
 
 ### Security
