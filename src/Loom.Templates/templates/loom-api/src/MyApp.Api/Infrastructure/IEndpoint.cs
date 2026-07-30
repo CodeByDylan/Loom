@@ -8,14 +8,14 @@ namespace MyApp.Api.Infrastructure;
 /// fails to register does not fail to compile. That is what makes the route-table test mandatory
 /// rather than nice to have.
 /// </remarks>
-public interface IEndpoint
+internal interface IEndpoint
 {
     /// <summary>Registers exactly one route.</summary>
     static abstract void Map(IEndpointRouteBuilder routes);
 }
 
 /// <summary>Maps every <see cref="IEndpoint" /> in an assembly.</summary>
-public static class EndpointExtensions
+internal static class EndpointExtensions
 {
     /// <summary>Finds and maps every endpoint the assembly declares.</summary>
     public static void MapEndpoints(this IEndpointRouteBuilder routes, System.Reflection.Assembly assembly)

@@ -28,7 +28,11 @@ builder.Services.AddLoomPersistence();
 builder.Services
     .AddLoomHandlers(chain => chain
         .WithLogging()
-        .WithValidation())
+        .WithValidation()
+        // Innermost, so it only sees the handler's own save. Without it, a domain event handler that
+        // reports a failure escapes as an unhandled exception and every such failure surfaces as a
+        // 500 — even though nothing exceptional happened.
+        .WithDomainEventFailures())
     .AddHandler<MyApp.Api.Features.Widgets.CreateWidget.Handler,
         MyApp.Api.Features.Widgets.CreateWidget.Request,
         MyApp.Api.Features.Widgets.CreateWidget.Response>()
