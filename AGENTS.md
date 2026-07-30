@@ -1,8 +1,8 @@
 # AGENTS.md
 
 Rules for working **on Loom itself**. Loom is a family of foundational .NET packages,
-consumed by other projects. Rules for those consuming projects live in
-`docs/AGENTS.consumer.template.md` and **do not apply here**.
+consumed by other projects. Rules for those consuming projects live in `docs/agents/`
+and **do not apply here** — see §9.
 
 ## 1. Orientation
 
