@@ -44,7 +44,7 @@ public class OrderTests
     {
         Order order = Placed(("sku-1", 100));
 
-        order.Cancel();
+        _ = order.Cancel();
 
         IDomainEvent raised = order.DomainEvents.Single();
         await Assert.That(raised).IsTypeOf<OrderCancelled>();
@@ -56,7 +56,7 @@ public class OrderTests
     {
         Order order = Placed(("sku-1", 100));
 
-        order.Ship();
+        _ = order.Ship();
 
         // Notifying the customer reaches outside the process, so the event asks to be delivered after
         // the transaction commits.
@@ -67,7 +67,7 @@ public class OrderTests
     public async Task A_Shipped_Order_Cannot_Be_Cancelled()
     {
         Order order = Placed(("sku-1", 100));
-        order.Ship();
+        _ = order.Ship();
 
         Result result = order.Cancel();
 
@@ -81,7 +81,7 @@ public class OrderTests
     public async Task A_Cancelled_Order_Cannot_Be_Shipped()
     {
         Order order = Placed(("sku-1", 100));
-        order.Cancel();
+        _ = order.Cancel();
 
         Result result = order.Ship();
 
@@ -94,7 +94,7 @@ public class OrderTests
     public async Task Cancelling_Twice_Is_A_Conflict()
     {
         Order order = Placed(("sku-1", 100));
-        order.Cancel();
+        _ = order.Cancel();
 
         Result result = order.Cancel();
 
@@ -130,10 +130,10 @@ public class OrderTests
     public async Task A_Failed_Transition_Raises_Nothing()
     {
         Order order = Placed(("sku-1", 100));
-        order.Ship();
+        _ = order.Ship();
         _ = order.DequeueDomainEvents();
 
-        order.Cancel();
+        _ = order.Cancel();
 
         await Assert.That(order.DomainEvents.Count).IsEqualTo(0);
     }
@@ -154,7 +154,7 @@ public class OrderTests
 
         Order open = Placed(mine, ("a", 1));
         Order shipped = Placed(mine, ("b", 1));
-        shipped.Ship();
+        _ = shipped.Ship();
         Order otherCustomer = Placed(Id<Customer>.New(), ("c", 1));
 
         Order[] matched = [.. new[] { open, shipped, otherCustomer }.Apply(new OpenOrdersForCustomer(mine))];

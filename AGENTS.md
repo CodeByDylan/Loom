@@ -10,7 +10,8 @@ Packages that exist today:
 
 | Package | Purpose | Does not contain |
 | --- | --- | --- |
-| `Loom.Results` | Result and error abstractions — the vocabulary every other package's signatures are written in. | Anything with a dependency. Anything domain-specific. |
+| `Loom.Results` | Result and error abstractions — the vocabulary every other package's signatures are written in. Carries the analyzer that reports a discarded result. | Anything with a dependency. Anything domain-specific. |
+| `Loom.Results.Analyzers` | `LOOM0001`: a result computed and thrown away. Packed into `Loom.Results`, never referenced at run time. | Anything the compiler already reports. A code fix — inserting `_ =` should take a moment's thought, not a keystroke. |
 | `Loom.Entities` | `Id<TEntity>`, `Entity<TSelf>`, `AggregateRoot<TSelf>`, `IDomainEvent`. Identity, identity equality, and domain event collection. | Persistence. Querying. Event *dispatch*. Audit fields. Concurrency tokens. A `ValueObject` base — `sealed record` already does that. |
 | `Loom.Specifications` | Named business rules over a type: a predicate, optional eager-loading, optional ordering, as pure expression trees. Applied to an `IQueryable` the caller still owns. | Paging. Any specific ORM. A repository to consume them. |
 | `Loom.Paging` | `PageRequest` and `Page<T>` — offset paging vocabulary, so no project reinvents the envelope. | Cursor paging. Async counting (needs an ORM). |
@@ -80,7 +81,8 @@ of letting a tier become a web of mutual references.
 - **Make helpers, extensions, and implementation details `internal`.** The abstractions a package exists to expose are public; nothing else is by default.
 - **Prefer immutability.** `init`-only or constructor-set properties, no setters. Mutable state in a foundational type needs an argument.
 - **Every public member has an XML doc comment.** This is enforced: `GenerateDocumentationFile` is on and warnings are errors. If a `<summary>` is hard to write, the API is not ready.
-- **Do not redeclare `TargetFramework`, `Nullable`, `ImplicitUsings`, or `LangVersion` in a `.csproj`.** `Directory.Build.props` owns them.
+- **Do not redeclare `TargetFramework`, `Nullable`, `ImplicitUsings`, or `LangVersion` in a `.csproj`.** `Directory.Build.props` owns them — including the one exception, analyzer projects, which the compiler only loads when built against `netstandard2.0`. That is decided from the project name there, not by a flag in the project: the file is imported before a project's own properties, so a flag set there is read as unset.
+- **An analyzer ships inside the package whose contract it enforces**, as a build-time asset, so it adds no runtime dependency and a consumer gets it without installing anything else. Analyzers do not travel through a `ProjectReference`, so anything in this repository that should be checked by one has to reference it explicitly.
 - **One concept per file, named after it.** `Result` and `Result<T>` share `Result.cs` because they are one concept that converts between itself. Two unrelated types do not share a file.
 - **Throwing on a programming error is correct, and is not what §2.3 forbids.** Hard constraint 3 is about *expected* failures — a domain rule that did not hold. Misusing an API is a bug: reading `Value` off a failed result, or observing a `default`-constructed one, throws deliberately. Do not "fix" those guards by returning a failure; a silent wrong answer is worse than a stack trace.
 - **`Loom.Results.Error` is unsealed, as a documented exception to seal-by-default.** Consumers derive from it to declare domain errors, and deriving is what makes them convert implicitly to a `Result`. C# forbids user-defined conversions from an interface (CS0552), so an `IError` interface could not have offered that.

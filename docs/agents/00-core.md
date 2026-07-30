@@ -118,7 +118,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 - **The set is closed.** A seventh category means the taxonomy has become a status-code enum. Carry the specifics as metadata on `Error<TMetadata>` instead.
 - **A failed result carries exactly one error.** Several validation failures are one `ValidationError` whose metadata is a field→messages map, which maps straight onto the ProblemDetails `errors` extension.
 - **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
-- **Never ignore a returned `Result`.** Failure-as-a-value is a value you can discard, and nothing currently warns you — `IDE0058` is off because it fires on every fluent call. Until the analyzer exists, this is caught in review. Use `_ = ...` when you genuinely mean to discard one.
+- **Never ignore a returned `Result`.** `LOOM0001` reports one, and since warnings are errors here it fails the build. Write `_ = ...` when the outcome really is of no interest — at which point you have said so, which is the whole point. Do not silence the rule to avoid the sentence.
 - **Category-to-transport mapping comes from a Loom package, never inline in a slice.** In an API that is `Loom.Results.AspNetCore`: `result.ToHttpResult()`. If a project wants different titles or extra members, it builds the problem details with `ToProblemDetails()` and changes it — the package has no options type on purpose.
 
 ## 8. Configuration and authorization

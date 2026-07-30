@@ -63,10 +63,12 @@
   <Folder Name="/Results/src/">
     <Project Path="src/Loom.Results/Loom.Results.csproj" />
     <Project Path="src/Loom.Results.AspNetCore/Loom.Results.AspNetCore.csproj" />
+    <Project Path="src/Loom.Results.Analyzers/Loom.Results.Analyzers.csproj" />
   </Folder>
   <Folder Name="/Results/tests/">
     <Project Path="tests/Loom.Results.Tests/Loom.Results.Tests.csproj" />
     <Project Path="tests/Loom.Results.AspNetCore.Tests/Loom.Results.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Loom.Results.Analyzers.Tests/Loom.Results.Analyzers.Tests.csproj" />
   </Folder>
   <Folder Name="/Specifications/" />
   <Folder Name="/Specifications/src/">

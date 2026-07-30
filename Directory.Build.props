@@ -15,6 +15,10 @@
     <PropertyGroup>
         <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
         <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
+        <!-- Detected from the name rather than a flag in the project. This file is imported before the
+             project's own properties, so a flag set there would be read here as unset. -->
+        <IsAnalyzerProject Condition="$(MSBuildProjectName.EndsWith('.Analyzers'))">true</IsAnalyzerProject>
+        <IsAnalyzerProject Condition="'$(IsAnalyzerProject)' == ''">false</IsAnalyzerProject>
     </PropertyGroup>
 
     <!-- Shipped packages: documented, packable, versioned from git tags. -->
@@ -44,6 +48,18 @@
     <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+    <!-- Analyzer projects. Declared last so it wins over the shipped-package settings above.
+         The compiler only loads analyzers built against netstandard2.0, so this is the one kind of
+         project whose framework is not net10.0 — which is why the exception lives here rather than in
+         a .csproj: TargetFramework still has exactly one owner, it just has two answers. Not packable
+         itself; its assembly is packed into the library it enforces. -->
+    <PropertyGroup Condition="'$(IsAnalyzerProject)' == 'true'">
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
     </PropertyGroup>
 
 </Project>

@@ -10,4 +10,14 @@
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
     </PropertyGroup>
 
+    <ItemGroup>
+        <!-- A consumer installing Loom.Results gets this analyzer from the package. The sample uses
+             project references instead, and analyzers do not travel that way, so it is applied here
+             explicitly — otherwise the reference application would not obey the rule it documents. -->
+        <ProjectReference Include="$(MSBuildThisFileDirectory)..\src\Loom.Results.Analyzers\Loom.Results.Analyzers.csproj"
+                          ReferenceOutputAssembly="false"
+                          OutputItemType="Analyzer"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
 </Project>

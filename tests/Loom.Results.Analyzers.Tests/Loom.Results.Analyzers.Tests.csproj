@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="TUnit" />
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Referenced as a plain assembly, not as an analyzer: these tests drive it directly rather
+             than having the compiler apply it to themselves. -->
+        <ProjectReference Include="..\..\src\Loom.Results.Analyzers\Loom.Results.Analyzers.csproj" />
+        <ProjectReference Include="..\..\src\Loom.Results\Loom.Results.csproj" />
+    </ItemGroup>
+
+</Project>
