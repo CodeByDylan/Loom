@@ -1,5 +1,3 @@
-| `Ordering.AppHost` | Development-time orchestration: starts Postgres and the service and wires the connection string between them. Ships nothing. |
-| `Ordering.ServiceDefaults` | Telemetry, health, resilience and service discovery. Scaffolded into the solution as editable code rather than taken as a dependency. |
 # Samples
 
 `Ordering` is an HTTP API built on Loom, in its own solution so that an application's dependencies
@@ -17,6 +15,8 @@ dotnet test  samples/Loom.Samples.slnx    # needs Docker; the integration tests 
 | --- | --- |
 | `Ordering.Domain` | Entities, aggregate roots, strongly-typed identities, invariants returning results, and specifications. References only Loom and the base class library — the one boundary enforced at compile time. |
 | `Ordering.Api` | Five slices, one file and one namespace each. Endpoints are thin adapters; the database context is injected straight into handlers; specifications are applied to the query the slice owns. |
+| `Ordering.AppHost` | Development-time orchestration. Starts Postgres and the service and wires the connection string between them, so nothing needs one in a file. Ships nothing. |
+| `Ordering.ServiceDefaults` | Telemetry, health, resilience and service discovery. Part of the solution as editable code rather than a dependency, which is why it does not fall foul of the objection that ruled out frameworks owning the request path. |
 | `Ordering.Domain.Tests` | Pure, fast, no infrastructure. |
 | `Ordering.Api.Tests` | Every slice through real HTTP against real Postgres, reset with Respawn between tests. Also the route table snapshot, and the handler and validator registration checks. |
 | `Ordering.ArchitectureTests` | The structural rules, asserted rather than reviewed. |
