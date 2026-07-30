@@ -43,10 +43,16 @@ public sealed class WidgetSliceTests
     {
         using HttpClient client = _app.Client();
 
-        HttpResponseMessage response = await client.PostAsJsonAsync("/widgets", new { name = "", size = 3 });
+        // Too long for the validator, but acceptable to Widget.Create — which is the point. An empty
+        // name would be refused by the domain as well, so the test would pass with the validating
+        // decorator removed and prove nothing. Only the length rule separates the two, so this fails
+        // if the decorator is ever dropped from the chain.
+        HttpResponseMessage response = await client.PostAsJsonAsync(
+            "/widgets",
+            new { name = new string('w', 201), size = 3 });
 
-        // The validating decorator turns this into an Invalid failure, which maps to 400 with the
-        // errors extension populated. Nothing in the slice writes a status code.
+        // The decorator turns this into an Invalid failure, which maps to 400 with the errors
+        // extension populated. Nothing in the slice writes a status code.
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.BadRequest);
     }
 

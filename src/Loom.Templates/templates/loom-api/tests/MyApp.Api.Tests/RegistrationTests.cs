@@ -43,10 +43,24 @@ public sealed class RegistrationTests
     {
         using IServiceScope scope = AppFixture.App.Services.CreateScope();
 
-        object? create = scope.ServiceProvider.GetService(typeof(IHandler<
-            Api.Features.Widgets.CreateWidget.Request,
-            Api.Features.Widgets.CreateWidget.Response>));
+        // Discovered rather than listed. Naming one handler would only ever prove that handler is
+        // registered, so a new slice whose AddHandler call was forgotten would still pass — and a
+        // handler that is never registered fails at the first request instead of at the first test.
+        Type[] handlerInterfaces =
+        [
+            .. typeof(Program).Assembly.GetTypes()
+                .Where(type => type is { IsClass: true, IsAbstract: false })
+                .SelectMany(type => type.GetInterfaces())
+                .Where(contract => contract.IsGenericType
+                    && contract.GetGenericTypeDefinition() == typeof(IHandler<,>))
+                .Distinct(),
+        ];
 
-        await Assert.That(create).IsNotNull();
+        await Assert.That(handlerInterfaces).IsNotEmpty();
+
+        foreach (Type contract in handlerInterfaces)
+        {
+            await Assert.That(scope.ServiceProvider.GetService(contract)).IsNotNull();
+        }
     }
 }
