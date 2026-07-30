@@ -4,4 +4,26 @@
         <Description>Result and error abstractions for the Loom package family. Depends on nothing.</Description>
     </PropertyGroup>
 
+    <ItemGroup>
+        <!-- Not a dependency: the analyzer is built first, applied to this project's own compilation,
+             and packed alongside it below. ReferenceOutputAssembly keeps it out of the reference
+             graph, so Tier 0 still depends on nothing at run time. -->
+        <ProjectReference Include="..\Loom.Results.Analyzers\Loom.Results.Analyzers.csproj"
+                          ReferenceOutputAssembly="false"
+                          OutputItemType="Analyzer"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
+    <!-- Packed where the compiler looks for analyzers, so a consumer of Loom.Results gets the check
+         without installing anything else. An analyzer that has to be opted into separately is one the
+         people who need it most will not have. -->
+    <Target Name="IncludeAnalyzerInPackage" BeforeTargets="_GetPackageFiles">
+        <ItemGroup>
+            <None Include="$(MSBuildThisFileDirectory)..\Loom.Results.Analyzers\bin\$(Configuration)\netstandard2.0\Loom.Results.Analyzers.dll"
+                  Pack="true"
+                  PackagePath="analyzers/dotnet/cs"
+                  Visible="false" />
+        </ItemGroup>
+    </Target>
+
 </Project>

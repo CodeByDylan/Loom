@@ -1,6 +1,6 @@
 namespace Loom.Entities.Tests;
 
-public class EntityTests
+public sealed class EntityTests
 {
     [Test]
     public async Task A_New_Entity_Has_An_Identity_Immediately()

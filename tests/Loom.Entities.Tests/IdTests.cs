@@ -2,7 +2,7 @@ using System.Text.Json;
 
 namespace Loom.Entities.Tests;
 
-public class IdTests
+public sealed class IdTests
 {
     [Test]
     public async Task New_Produces_A_Version_7_Value()

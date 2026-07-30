@@ -1,0 +1,21 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Build-time checks for Loom results. Packed into Loom.Results; never referenced at run time.</Description>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- Compile-time only: an analyzer runs inside the compiler and must add nothing to the
+             package it ships in. -->
+        <PackageReference Include="Microsoft.CodeAnalysis.CSharp" PrivateAssets="all" ExcludeAssets="runtime" />
+        <PackageReference Include="Microsoft.CodeAnalysis.Analyzers" PrivateAssets="all" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <!-- Release tracking. Every rule is recorded before it ships, so a consumer can see what
+             changed between versions rather than discovering it from a failing build. -->
+        <AdditionalFiles Include="AnalyzerReleases.Shipped.md" />
+        <AdditionalFiles Include="AnalyzerReleases.Unshipped.md" />
+    </ItemGroup>
+
+</Project>

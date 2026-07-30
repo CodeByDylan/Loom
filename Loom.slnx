@@ -13,6 +13,7 @@
   </Folder>
   <Folder Name="/- Solution Items/ci/">
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/release.yml" />
   </Folder>
   <Folder Name="/- Solution Items/docs/">
     <File Path="docs/ROADMAP.md" />
@@ -24,6 +25,8 @@
     <File Path="docs/agents/10-cli.md" />
   </Folder>
   <Folder Name="/- Solution Items/scripts/">
+    <File Path="scripts/check-docs.sh" />
+    <File Path="scripts/check-release-version.sh" />
     <File Path="scripts/new-agents-md.sh" />
   </Folder>
   <Folder Name="/Entities/" />
@@ -44,7 +47,14 @@
     <Project Path="tests/Loom.Handlers.Tests/Loom.Handlers.Tests.csproj" />
     <Project Path="tests/Loom.Handlers.FluentValidation.Tests/Loom.Handlers.FluentValidation.Tests.csproj" />
   </Folder>
-  <Folder Name="/Paging/" />
+    <Folder Name="/Persistence/" />
+  <Folder Name="/Persistence/src/">
+    <Project Path="src/Loom.Persistence.EntityFrameworkCore/Loom.Persistence.EntityFrameworkCore.csproj" />
+  </Folder>
+  <Folder Name="/Persistence/tests/">
+    <Project Path="tests/Loom.Persistence.EntityFrameworkCore.Tests/Loom.Persistence.EntityFrameworkCore.Tests.csproj" />
+  </Folder>
+<Folder Name="/Paging/" />
   <Folder Name="/Paging/src/">
     <Project Path="src/Loom.Paging/Loom.Paging.csproj" />
   </Folder>
@@ -54,9 +64,13 @@
   <Folder Name="/Results/" />
   <Folder Name="/Results/src/">
     <Project Path="src/Loom.Results/Loom.Results.csproj" />
+    <Project Path="src/Loom.Results.AspNetCore/Loom.Results.AspNetCore.csproj" />
+    <Project Path="src/Loom.Results.Analyzers/Loom.Results.Analyzers.csproj" />
   </Folder>
   <Folder Name="/Results/tests/">
     <Project Path="tests/Loom.Results.Tests/Loom.Results.Tests.csproj" />
+    <Project Path="tests/Loom.Results.AspNetCore.Tests/Loom.Results.AspNetCore.Tests.csproj" />
+    <Project Path="tests/Loom.Results.Analyzers.Tests/Loom.Results.Analyzers.Tests.csproj" />
   </Folder>
   <Folder Name="/Specifications/" />
   <Folder Name="/Specifications/src/">

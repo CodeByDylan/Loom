@@ -3,7 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Loom.Handlers.Tests;
 
-public class HandlerRegistrationTests
+public sealed class HandlerRegistrationTests
 {
     [Test]
     public async Task A_Handler_Resolves_With_No_Decorators()

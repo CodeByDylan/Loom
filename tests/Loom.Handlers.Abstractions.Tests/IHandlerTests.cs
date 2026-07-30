@@ -2,7 +2,7 @@ using Loom.Results;
 
 namespace Loom.Handlers.Abstractions.Tests;
 
-public class IHandlerTests
+public sealed class IHandlerTests
 {
     [Test]
     public async Task A_Handler_Returning_A_Value_Reports_Success()
