@@ -16,6 +16,11 @@ internal sealed class LoggingHandler<TRequest, TResponse>(
     IHandler<TRequest, TResponse> inner,
     ILogger<LoggingHandler<TRequest, TResponse>> logger) : IHandler<TRequest, TResponse>
 {
+    // The full name, not the short one, and computed once per closed generic. Slice contracts are
+    // private to their slice, so in a codebase following that rule every request type is called
+    // "Request" — a short name would identify every operation in the application identically.
+    private static readonly string RequestName = HandlerLog.NameOf<TRequest>();
+
     public async Task<Result<TResponse>> HandleAsync(TRequest request, CancellationToken cancellationToken)
     {
         long startedAt = Stopwatch.GetTimestamp();
@@ -26,7 +31,7 @@ internal sealed class LoggingHandler<TRequest, TResponse>(
 
             HandlerLog.Record(
                 logger,
-                typeof(TRequest).Name,
+                RequestName,
                 result.IsFailure ? result.Error : null,
                 HandlerLog.ElapsedMilliseconds(startedAt));
 
@@ -34,7 +39,7 @@ internal sealed class LoggingHandler<TRequest, TResponse>(
         }
         catch (Exception exception)
         {
-            HandlerLog.Threw(logger, typeof(TRequest).Name, HandlerLog.ElapsedMilliseconds(startedAt), exception);
+            HandlerLog.Threw(logger, RequestName, HandlerLog.ElapsedMilliseconds(startedAt), exception);
             throw;
         }
     }
@@ -45,6 +50,8 @@ internal sealed class LoggingHandler<TRequest>(
     IHandler<TRequest> inner,
     ILogger<LoggingHandler<TRequest>> logger) : IHandler<TRequest>
 {
+    private static readonly string RequestName = HandlerLog.NameOf<TRequest>();
+
     public async Task<Result> HandleAsync(TRequest request, CancellationToken cancellationToken)
     {
         long startedAt = Stopwatch.GetTimestamp();
@@ -55,7 +62,7 @@ internal sealed class LoggingHandler<TRequest>(
 
             HandlerLog.Record(
                 logger,
-                typeof(TRequest).Name,
+                RequestName,
                 result.IsFailure ? result.Error : null,
                 HandlerLog.ElapsedMilliseconds(startedAt));
 
@@ -63,7 +70,7 @@ internal sealed class LoggingHandler<TRequest>(
         }
         catch (Exception exception)
         {
-            HandlerLog.Threw(logger, typeof(TRequest).Name, HandlerLog.ElapsedMilliseconds(startedAt), exception);
+            HandlerLog.Threw(logger, RequestName, HandlerLog.ElapsedMilliseconds(startedAt), exception);
             throw;
         }
     }

@@ -69,6 +69,29 @@ public class LoggingHandlerTests
     }
 
     [Test]
+    public async Task Two_Requests_Sharing_A_Short_Name_Are_Told_Apart()
+    {
+        // Not a hypothetical. Slice contracts are private to their slice, so a codebase following that
+        // rule names every request type "Request" — a short name would make every operation in the
+        // application log identically.
+        Recorder recorder = new();
+        await using ServiceProvider provider = BuildDistinct(recorder);
+
+        _ = await provider.GetRequiredService<IHandler<Placing.Request>>()
+            .HandleAsync(new Placing.Request(), CancellationToken.None);
+
+        _ = await provider.GetRequiredService<IHandler<Shipping.Request>>()
+            .HandleAsync(new Shipping.Request(), CancellationToken.None);
+
+        string[] identifiers = [.. recorder.Entries.Select(entry => entry.Message)];
+
+        await Assert.That(identifiers.Length).IsEqualTo(2);
+        await Assert.That(identifiers[0]).IsNotEqualTo(identifiers[1]);
+        await Assert.That(identifiers.Any(entry => entry.Contains(nameof(Placing)))).IsTrue();
+        await Assert.That(identifiers.Any(entry => entry.Contains(nameof(Shipping)))).IsTrue();
+    }
+
+    [Test]
     public async Task A_Failure_Records_Its_Code()
     {
         Recorder recorder = await RunAsync(
@@ -117,6 +140,20 @@ public class LoggingHandlerTests
         return recorder;
     }
 
+    private static ServiceProvider BuildDistinct(Recorder recorder)
+    {
+        ServiceCollection services = new();
+        services.AddLogging(logging => logging
+            .SetMinimumLevel(LogLevel.Trace)
+            .AddProvider(new RecordingLoggerProvider(recorder)));
+
+        services.AddLoomHandlers(chain => chain.WithLogging())
+            .AddHandler<Placing.Handler, Placing.Request>()
+            .AddHandler<Shipping.Handler, Shipping.Request>();
+
+        return services.BuildServiceProvider();
+    }
+
     private static ServiceProvider Build(Recorder recorder, Func<Request, Result<string>> behaviour)
     {
         ServiceCollection services = new();
@@ -131,6 +168,30 @@ public class LoggingHandlerTests
             .AddHandler<RefusingCommandHandler, Command>();
 
         return services.BuildServiceProvider();
+    }
+
+    // Two slices, each with a contract of its own, both called Request — the shape the guidance
+    // prescribes and the one a short type name cannot distinguish.
+    internal static class Placing
+    {
+        internal sealed record Request;
+
+        internal sealed class Handler : IHandler<Request>
+        {
+            public Task<Result> HandleAsync(Request request, CancellationToken cancellationToken) =>
+                Task.FromResult(Result.Success);
+        }
+    }
+
+    internal static class Shipping
+    {
+        internal sealed record Request;
+
+        internal sealed class Handler : IHandler<Request>
+        {
+            public Task<Result> HandleAsync(Request request, CancellationToken cancellationToken) =>
+                Task.FromResult(Result.Success);
+        }
     }
 
     internal sealed record Request(string Secret = "hunter2");

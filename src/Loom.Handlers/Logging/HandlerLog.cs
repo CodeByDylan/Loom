@@ -23,6 +23,17 @@ internal static partial class HandlerLog
         Stopwatch.GetElapsedTime(startedAt).TotalMilliseconds;
 
     /// <summary>
+    /// How a request type is identified in a log entry.
+    /// </summary>
+    /// <remarks>
+    /// The full name, because slice contracts are private to their slice: in a codebase following that
+    /// rule every request type is named <c>Request</c>, and a short name would identify every
+    /// operation in the application identically. The fallback covers the cases where a runtime declines
+    /// to give a full name at all, such as a generic parameter.
+    /// </remarks>
+    internal static string NameOf<TRequest>() => typeof(TRequest).FullName ?? typeof(TRequest).Name;
+
+    /// <summary>
     /// Writes the one line that describes this outcome.
     /// </summary>
     /// <param name="logger">Where to write.</param>
