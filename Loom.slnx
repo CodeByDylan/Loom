@@ -1,0 +1,31 @@
+<Solution>
+  <Folder Name="/- Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="LICENSE" />
+    <File Path="Loom.slnx" />
+    <File Path="README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="dotnet-tools.json" />
+  </Folder>
+  <Folder Name="/- Solution Items/ci/">
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
+  <Folder Name="/Entities/" />
+  <Folder Name="/Entities/src/" />
+  <Folder Name="/Entities/tests/" />
+  <Folder Name="/Handlers/" />
+  <Folder Name="/Handlers/src/" />
+  <Folder Name="/Handlers/tests/" />
+  <Folder Name="/Paging/" />
+  <Folder Name="/Paging/src/" />
+  <Folder Name="/Paging/tests/" />
+  <Folder Name="/Results/" />
+  <Folder Name="/Results/src/" />
+  <Folder Name="/Results/tests/" />
+  <Folder Name="/Specifications/" />
+  <Folder Name="/Specifications/src/" />
+  <Folder Name="/Specifications/tests/" />
+</Solution>
