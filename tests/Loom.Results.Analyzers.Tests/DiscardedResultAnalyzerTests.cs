@@ -55,6 +55,17 @@ public class DiscardedResultAnalyzerTests
     }
 
     [Test]
+    public async Task A_Result_Passed_As_An_Argument_Is_Accepted()
+    {
+        // Correct by construction today, since only expression statements are examined. Pinned so that
+        // broadening what the analyzer looks at cannot start reporting a result that is plainly used.
+        IReadOnlyList<string> reported = await AnalyzerHarness.RunAsync(
+            Wrap("subject.Observe(subject.Cancel());"));
+
+        await Assert.That(reported).IsEmpty();
+    }
+
+    [Test]
     public async Task A_Returned_Result_Is_Accepted()
     {
         IReadOnlyList<string> reported = await AnalyzerHarness.RunAsync("""
@@ -113,6 +124,7 @@ public class DiscardedResultAnalyzerTests
             public Result<string> Describe() => Result<string>.Success("x");
             public Task<Result> CancelAsync() => Task.FromResult(Result.Success);
             public int Count() => 1;
+            public void Observe(Result outcome) { }
         }
 
         public static class Caller
