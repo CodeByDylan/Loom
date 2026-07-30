@@ -6,7 +6,7 @@ using Ordering.Domain.Orders;
 
 namespace Ordering.Domain.Tests;
 
-public class OrderTests
+public sealed class OrderTests
 {
     private static readonly DateOnly Today = new(2026, 7, 30);
 

@@ -1,6 +1,6 @@
 namespace Loom.Specifications.Tests;
 
-public class SpecificationTests
+public sealed class SpecificationTests
 {
     private static readonly Order[] Orders =
     [

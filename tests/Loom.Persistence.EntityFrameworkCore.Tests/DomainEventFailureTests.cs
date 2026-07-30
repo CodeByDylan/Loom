@@ -9,7 +9,7 @@ namespace Loom.Persistence.EntityFrameworkCore.Tests;
 /// <summary>
 /// A failure reported by a domain event handler reaches the caller as a failure, not an exception.
 /// </summary>
-public class DomainEventFailureTests
+public sealed class DomainEventFailureTests
 {
     [Test]
     public async Task A_Failing_Event_Handler_Becomes_The_Callers_Failure()

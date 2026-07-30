@@ -1,6 +1,6 @@
 namespace Loom.Paging.Tests;
 
-public class PagingTests
+public sealed class PagingTests
 {
     private static readonly int[] Numbers = [.. Enumerable.Range(1, 25)];
 

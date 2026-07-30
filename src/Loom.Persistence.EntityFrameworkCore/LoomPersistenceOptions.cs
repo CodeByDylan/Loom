@@ -44,6 +44,11 @@ public sealed class LoomPersistenceOptions
             services.AddSingleton<OutboxProcessor<TContext>>();
             services.AddHostedService<OutboxDeliveryService<TContext>>();
 
+            // Scoped, because it works through the context. Registered whenever an outbox exists: a
+            // deployment that cannot inspect or clear its outbox has no way to recover from either a
+            // batch of failures or unbounded growth.
+            services.AddScoped<OutboxAdministration<TContext>>();
+
             // Context-agnostic: it writes to whichever context is saving. Added once so that
             // configuring a second outbox does not register a duplicate.
             services.TryAddScoped<IDeferredDomainEventSink, OutboxSink>();

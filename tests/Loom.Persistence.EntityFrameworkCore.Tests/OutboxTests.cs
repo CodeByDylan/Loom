@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Loom.Persistence.EntityFrameworkCore.Tests;
 
-public class OutboxTests
+public sealed class OutboxTests
 {
     [Test]
     public async Task A_Deferred_Event_Is_Recorded_Instead_Of_Dispatched()

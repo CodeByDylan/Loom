@@ -63,6 +63,8 @@ internal sealed class OutboxHost : IAsyncDisposable
     internal OutboxProcessor<OutboxDbContext> Processor =>
         _provider.GetRequiredService<OutboxProcessor<OutboxDbContext>>();
 
+    internal IServiceScope CreateScope() => _provider.CreateScope();
+
     internal async Task InScopeAsync(Func<OutboxDbContext, Task> work)
     {
         using IServiceScope scope = _provider.CreateScope();

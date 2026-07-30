@@ -1,6 +1,6 @@
 namespace Loom.Results.Tests;
 
-public class ResultTests
+public sealed class ResultTests
 {
     private static Error AnError => Errors.Conflict("orders.already_cancelled", "The order is already cancelled.");
 

@@ -2,7 +2,7 @@ using System.Linq.Expressions;
 
 namespace Loom.Specifications.Tests;
 
-public class CriteriaTests
+public sealed class CriteriaTests
 {
     private static readonly Expression<Func<Order, bool>> BigOrder = order => order.Total > 100;
     private static readonly Expression<Func<Order, bool>> AcmeOrder = order => order.Customer == "Acme";

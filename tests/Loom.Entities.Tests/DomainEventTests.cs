@@ -2,7 +2,7 @@ using Loom.Results;
 
 namespace Loom.Entities.Tests;
 
-public class DomainEventTests
+public sealed class DomainEventTests
 {
     [Test]
     public async Task An_Ordinary_Event_Is_Not_Deferred()

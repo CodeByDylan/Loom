@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Loom.Persistence.EntityFrameworkCore.Tests;
 
-public class AsyncPagingTests
+public sealed class AsyncPagingTests
 {
     [Test]
     public async Task A_Page_Reports_Its_Items_And_The_Total()

@@ -4,7 +4,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Loom.Handlers.FluentValidation.Tests;
 
-public class ValidatingHandlerTests
+public sealed class ValidatingHandlerTests
 {
     [Test]
     public async Task A_Valid_Request_Reaches_The_Handler()

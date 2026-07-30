@@ -18,7 +18,7 @@ Packages that exist today:
 | `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` and `IHandler<TRequest>`, as pure types, so a consumer's domain project can declare handlers. | Anything touching a container. |
 | `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. Carries the logging decorator, whose level follows the failure's category. | A dispatcher. See §5. Any way to log a request's contents. |
 | `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
-| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. |
+| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox with administration over it, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. Any endpoint, command or dashboard over the outbox. |
 
 Every package listed has code. There are no placeholder projects left.
 
@@ -107,6 +107,7 @@ of letting a tier become a web of mutual references.
 - Test method names read as sentences: `HasValue_Is_False_When_Value_Is_Null`. `.editorconfig` disables the PascalCase naming rule under `tests/` for exactly this reason.
 - TUnit assertions are awaited: `await Assert.That(x).IsFalse();`.
 - **No mutable static state in tests.** TUnit runs tests in parallel by default, so a `static` counter or flag is shared across them and produces failures that look like product bugs. Record through an injected object scoped to the test instead.
+- **A test fixture is `public sealed`.** Public so TUnit discovers it, sealed because nothing derives from it — the same rule as §5, applied here too so there is no second convention to remember. Test methods carry no documentation comment: their names are the sentence, and test projects generate no documentation file for one to appear in.
 
 ## 7. Adding a new package
 

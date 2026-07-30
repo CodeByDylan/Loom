@@ -1,6 +1,6 @@
 namespace Loom.Entities.Tests;
 
-public class AggregateRootTests
+public sealed class AggregateRootTests
 {
     [Test]
     public async Task A_New_Aggregate_Has_No_Events()

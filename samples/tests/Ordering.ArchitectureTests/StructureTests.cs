@@ -16,7 +16,7 @@ namespace Ordering.ArchitectureTests;
 /// broken. These are the five from the shared guidance, minus the one about container registration,
 /// which needs a built application and therefore lives with the integration tests.
 /// </remarks>
-public class StructureTests
+public sealed class StructureTests
 {
     private static readonly Assembly Domain = typeof(Order).Assembly;
     private static readonly Assembly Api = typeof(Program).Assembly;

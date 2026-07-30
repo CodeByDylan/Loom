@@ -13,6 +13,9 @@ namespace Loom.Persistence;
 /// Separate from the background service that drives it, so that one pass can be run and asserted on
 /// directly without waiting for a timer.
 /// </remarks>
+/// <param name="scopes">Creates a scope per pass, so each delivery gets its own context.</param>
+/// <param name="settings">This context's outbox configuration.</param>
+/// <param name="clock">Records when a delivery succeeded.</param>
 public sealed class OutboxProcessor<TContext>(
     IServiceScopeFactory scopes,
     OutboxSettings<TContext> settings,
