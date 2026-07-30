@@ -71,7 +71,10 @@ while IFS= read -r document; do
     # written: '||' and '| |' both keep the count intact and both pass.
     if ! awk '
         /^\|/ {
-            pipes = gsub(/\|/, "|");
+            row = $0;
+            # An escaped pipe is content, not a delimiter, so it must not be counted as one.
+            gsub(/\\\|/, "", row);
+            pipes = gsub(/\|/, "|", row);
             if (in_table && pipes != expected) {
                 printf "%s: line %d has %d cells where the table above it has %d\n", FILENAME, FNR, pipes - 1, expected - 1 > "/dev/stderr";
                 bad = 1;
