@@ -45,7 +45,10 @@ builder.Services
     .AddHandler<Ordering.Api.Features.Orders.ShipOrder.Handler,
         Ordering.Api.Features.Orders.ShipOrder.Request>();
 
-builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped);
+// includeInternalTypes matters: slice validators are internal, and without it none are registered.
+// The validating decorator treats a missing validator as nothing to validate, so the omission is
+// silent — which is why ValidatorRegistrationTests asserts every validator is resolvable.
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped, includeInternalTypes: true);
 
 builder.Services.AddScoped<IDomainEventHandler<OrderCancelled>, RecordCancellation>();
 builder.Services.AddScoped<IDomainEventHandler<OrderShipped>, NotifyCustomerOfShipment>();

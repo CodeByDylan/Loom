@@ -13,7 +13,10 @@ internal sealed class Handler(OrderingDbContext database, ICurrentCustomer custo
 {
     public async Task<Result> HandleAsync(Request request, CancellationToken cancellationToken)
     {
+        // Lines are needed because the event carries the total, which is computed from them. Without
+        // this the aggregate would raise an event reporting a total of zero.
         Order? order = await database.Orders
+            .Include(candidate => candidate.Lines)
             .SingleOrDefaultAsync(candidate => candidate.Id == request.OrderId, cancellationToken);
 
         if (order is null)

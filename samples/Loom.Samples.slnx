@@ -10,6 +10,8 @@
   </Folder>
   <Folder Name="/Ordering/tests/">
     <Project Path="tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj" />
+    <Project Path="tests/Ordering.Api.Tests/Ordering.Api.Tests.csproj" />
+    <Project Path="tests/Ordering.ArchitectureTests/Ordering.ArchitectureTests.csproj" />
   </Folder>
   <Folder Name="/Loom/">
     <Project Path="../src/Loom.Entities/Loom.Entities.csproj" />
