@@ -1,4 +1,3 @@
-using Loom.Entities;
 using Loom.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Ordering.Domain.Customers;
@@ -6,6 +5,9 @@ using Ordering.Domain.Orders;
 
 namespace Ordering.Api.Infrastructure;
 
+/// <summary>
+/// The one context for the application, holding both aggregates and the outbox.
+/// </summary>
 public sealed class OrderingDbContext(DbContextOptions<OrderingDbContext> options) : DbContext(options)
 {
     public DbSet<Order> Orders => Set<Order>();
@@ -68,22 +70,4 @@ public sealed class OrderingDbContext(DbContextOptions<OrderingDbContext> option
 
         modelBuilder.AddLoomOutbox();
     }
-}
-
-public sealed class CancellationRecord
-{
-    public Guid Id { get; init; } = Guid.CreateVersion7();
-
-    public Id<Order> OrderId { get; init; }
-
-    public int Total { get; init; }
-}
-
-public sealed class ShipmentNotification
-{
-    public Guid Id { get; init; } = Guid.CreateVersion7();
-
-    public Id<Order> OrderId { get; init; }
-
-    public Id<Customer> CustomerId { get; init; }
 }
