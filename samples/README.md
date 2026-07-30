@@ -39,6 +39,17 @@ shape: authenticated by default, named policy constants, and authorization that 
 state living in the handler. A real deployment validates tokens from an external issuer and holds no
 signing key at all.
 
+The key lives in `appsettings.Development.json`, which means it is public — so `appsettings.json`
+carries none, and startup refuses the development key in any other environment rather than accepting
+tokens anyone could have signed. Running the sample outside Development means supplying one:
+
+```bash
+dotnet user-secrets --project samples/src/Ordering.Api \
+    set Authentication:SigningKey "<at least 32 characters>"
+```
+
+The connection string is configured the same way, and in development the AppHost supplies it.
+
 **There is no generated API document.** The current package brings a transitive dependency with a
 known high-severity advisory, and the fixed major version is incompatible with it. It contributes
 nothing to exercising Loom, so it was dropped rather than suppressed.

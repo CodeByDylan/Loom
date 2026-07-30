@@ -1,5 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk.Web">
 
+    <PropertyGroup>
+        <!-- So that a signing key can be supplied without editing a file that is under source control. -->
+        <UserSecretsId>ordering-sample</UserSecretsId>
+    </PropertyGroup>
+
     <ItemGroup>
         <ProjectReference Include="..\Ordering.Domain\Ordering.Domain.csproj" />
         <ProjectReference Include="..\Ordering.ServiceDefaults\Ordering.ServiceDefaults.csproj" />

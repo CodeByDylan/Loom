@@ -6,6 +6,7 @@ using Loom.Paging;
 using Loom.Persistence;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Ordering.Api.Features.Orders.Events;
 using Ordering.Api.Infrastructure;
@@ -21,10 +22,24 @@ builder.Services
     .AddOptions<AuthenticationOptions>()
     .Bind(builder.Configuration.GetSection(AuthenticationOptions.SectionName))
     .ValidateDataAnnotations()
+    // The development key is committed, so it is public. Refusing it anywhere else means a deployment
+    // that never supplied a real one fails to start, rather than accepting forged tokens quietly.
+    .Validate(
+        authentication => builder.Environment.IsDevelopment()
+            || authentication.SigningKey != AuthenticationOptions.DevelopmentSigningKey,
+        "Authentication:SigningKey is still the development key. Supply a real one through user secrets "
+        + "or environment configuration.")
     .ValidateOnStart();
 
+// Read once, and refused here rather than inside the options callback, where the failure would surface
+// on the first request instead of at startup. The AppHost supplies this in development.
+string connectionString = builder.Configuration.GetConnectionString("ordering")
+    ?? throw new InvalidOperationException(
+        "No 'ordering' connection string was configured. The AppHost provides one when running the "
+        + "sample; a deployment supplies it through configuration.");
+
 builder.Services.AddDbContext<OrderingDbContext>((serviceProvider, options) => options
-    .UseNpgsql(builder.Configuration.GetConnectionString("ordering"))
+    .UseNpgsql(connectionString)
     .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
 
 builder.Services.AddLoomPersistence(persistence => persistence
@@ -68,20 +83,25 @@ builder.Services.AddScoped<ICurrentCustomer, CurrentCustomer>();
 
 builder.Services
     .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
-    {
-        AuthenticationOptions authentication = builder.Configuration
-            .GetSection(AuthenticationOptions.SectionName)
-            .Get<AuthenticationOptions>() ?? new AuthenticationOptions();
+    .AddJwtBearer();
 
-        options.TokenValidationParameters = new TokenValidationParameters
+// Configured from the validated options rather than by reading the section again. Re-reading it here
+// would bypass every check above — and the `?? new AuthenticationOptions()` such a read needs would
+// have quietly configured an empty signing key instead of failing.
+builder.Services
+    .AddOptions<JwtBearerOptions>(JwtBearerDefaults.AuthenticationScheme)
+    .Configure<IOptions<AuthenticationOptions>>((jwt, authentication) =>
+    {
+        AuthenticationOptions settings = authentication.Value;
+
+        jwt.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
-            ValidIssuer = authentication.Issuer,
+            ValidIssuer = settings.Issuer,
             ValidateAudience = true,
-            ValidAudience = authentication.Audience,
+            ValidAudience = settings.Audience,
             ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(authentication.SigningKey)),
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(settings.SigningKey)),
             ValidateLifetime = true,
         };
     });
