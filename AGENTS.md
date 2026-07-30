@@ -1,5 +1,4 @@
-| 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. || 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` |
-| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, and an optional outbox. | A database provider — the consumer picks one. Cursor paging. |# AGENTS.md
+# AGENTS.md
 
 Rules for working **on Loom itself**. Loom is a family of foundational .NET packages,
 consumed by other projects. Rules for those consuming projects live in
@@ -62,11 +61,12 @@ of letting a tier become a web of mutual references.
 | 0 | `Loom.Results` | **Nothing.** BCL only. |
 | 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. |
 | 2 | `Loom.Handlers` | Tiers 0–1 + `Microsoft.Extensions.*` **Abstractions** packages only. |
-| 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` | Tiers 0–2 + one third-party dependency, named in the package ID. |
+| 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore`, `Loom.Results.AspNetCore` | Tiers 0–2 + one third-party dependency, named in the package ID. |
 
 - Tier 0 is absolute. `Loom.Results` appears in every consumer's method signatures, so any dependency it takes is in every consumer's transitive graph forever.
 - At Tier 2, reference abstractions packages only — `Microsoft.Extensions.Logging.Abstractions`, never `Microsoft.Extensions.Logging`. The non-abstractions package is the one that shows up in application code; it does not belong in a library.
 - Third-party coupling is declared in the package ID: `Loom.Persistence.EntityFrameworkCore`, never a `Loom.Persistence` that quietly pulls in EF Core. A consumer should be able to read their NuGet list and know their coupling.
+- **A `FrameworkReference` counts as the named dependency.** The tier rules talk about package references throughout, so a framework reference can look free. It is not: referencing `Microsoft.AspNetCore.App` restricts a package to ASP.NET Core hosts as firmly as any dependency, so it puts the package at Tier 3 and must be declared in the package ID the same way.
 - "One third-party dependency" means one *product*, not one NuGet identifier. `Loom.Persistence.EntityFrameworkCore` references both `Microsoft.EntityFrameworkCore` and its `.Relational` companion, because mapping a table it defines is impossible without the latter. A second, unrelated product would not be permitted.
 - A Tier 3 package stays **provider-neutral** where the product allows it. `Loom.Persistence.EntityFrameworkCore` does not reference Npgsql; a consumer chooses its own provider. Naming a provider would make the package a second opinion about the database.
 - The `dotnet-ef` tool in `dotnet-tools.json` serves `Loom.Persistence.EntityFrameworkCore`. EF Core must not appear in Tiers 0–2.

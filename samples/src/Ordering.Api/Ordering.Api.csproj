@@ -5,6 +5,7 @@
         <ProjectReference Include="..\Ordering.ServiceDefaults\Ordering.ServiceDefaults.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Handlers\Loom.Handlers.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Handlers.FluentValidation\Loom.Handlers.FluentValidation.csproj" />
+        <ProjectReference Include="..\..\..\src\Loom.Results.AspNetCore\Loom.Results.AspNetCore.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Paging\Loom.Paging.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Persistence.EntityFrameworkCore\Loom.Persistence.EntityFrameworkCore.csproj" />
     </ItemGroup>

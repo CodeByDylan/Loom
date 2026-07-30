@@ -19,6 +19,7 @@
     <Project Path="../src/Loom.Entities/Loom.Entities.csproj" />
     <Project Path="../src/Loom.Results/Loom.Results.csproj" />
     <Project Path="../src/Loom.Specifications/Loom.Specifications.csproj" />
+    <Project Path="../src/Loom.Results.AspNetCore/Loom.Results.AspNetCore.csproj" />
     <Project Path="../src/Loom.Handlers/Loom.Handlers.csproj" />
     <Project Path="../src/Loom.Handlers.Abstractions/Loom.Handlers.Abstractions.csproj" />
     <Project Path="../src/Loom.Handlers.FluentValidation/Loom.Handlers.FluentValidation.csproj" />

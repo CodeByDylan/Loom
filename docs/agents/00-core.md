@@ -118,7 +118,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 - **A failed result carries exactly one error.** Several validation failures are one `ValidationError` whose metadata is a field→messages map, which maps straight onto the ProblemDetails `errors` extension.
 - **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
 - **Never ignore a returned `Result`.** Failure-as-a-value is a value you can discard, and nothing currently warns you — `IDE0058` is off because it fires on every fluent call. Until the analyzer exists, this is caught in review. Use `_ = ...` when you genuinely mean to discard one.
-- Category-to-transport mapping lives in exactly one host extension method, never inline in a slice.
+- **Category-to-transport mapping comes from a Loom package, never inline in a slice.** In an API that is `Loom.Results.AspNetCore`: `result.ToHttpResult()`. If a project wants different titles or extra members, it builds the problem details with `ToProblemDetails()` and changes it — the package has no options type on purpose.
 
 ## 8. Configuration and authorization
 
