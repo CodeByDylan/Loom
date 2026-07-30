@@ -27,6 +27,7 @@ A **slice** is one operation. One file, one namespace, holding its request, resp
 handler, and entry point together.
 
 **The stack.** Versions live in `Directory.Packages.props`, never here and never in a `.csproj`.
+Loom packages install as `CodeByDylan.<name>`; the identifier is prefixed, the namespace named below is not.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
