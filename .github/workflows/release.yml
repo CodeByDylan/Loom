@@ -1,8 +1,9 @@
 name: Release
 
-# Publishing is a human action, and this is where that is enforced rather than merely stated:
-# nothing here runs without a tag someone pushed, and the push step waits on an environment whose
-# protection rules live in repository settings.
+# Publishing is a human action, and the tag is where that happens: nothing here runs without a tag
+# someone pushed. Nothing after the tag waits for anyone, so pushing one publishes. Deployment
+# protection rules would add a second pause but are unavailable on this repository's plan, so the
+# environment below is not one — do not read it as an approval step.
 #
 # There is no publishing credential in this repository. nuget.org trusts this workflow by name, and
 # issues a key that lasts an hour, so the thing an attacker would want to steal does not exist between
@@ -21,9 +22,9 @@ jobs:
   release:
     runs-on: ubuntu-latest
 
-    # Configure required reviewers on this environment in repository settings. Without them the tag
-    # alone releases; with them a person confirms it. Name it on the trust policy too, so a workflow
-    # run that skipped this environment cannot obtain a key at all.
+    # Scopes the trust policy rather than gating the run: naming it on the policy too means nuget.org
+    # refuses a key to any run that did not declare this environment. It holds nothing back by itself.
+    # Required reviewers would, and this is where they belong if the plan ever allows them.
     environment: nuget
 
     permissions:
