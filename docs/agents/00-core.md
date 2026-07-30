@@ -1,4 +1,4 @@
-| Data | EF Core 10 + Npgsql, `Loom.Persistence.EntityFrameworkCore` | Postgres. No repositories. |<!--LOOM-TEMPLATE Shared core fragment. Assembled by scripts/new-agents-md.sh. Does not govern the Loom repo itself. -->
+<!--LOOM-TEMPLATE Shared core fragment. Assembled by scripts/new-agents-md.sh. Does not govern the Loom repo itself. -->
 # AGENTS.md
 
 Rules for working on this project. Assembled from Loom's `docs/agents/` templates — this file
@@ -30,13 +30,13 @@ handler, and entry point together.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
-| Data | EF Core 10 + Npgsql | Postgres. No repositories. |
+| Data | EF Core + Npgsql, `Loom.Persistence.EntityFrameworkCore` | Postgres. No repositories. |
 | Queries | `Loom.Specifications`, `Loom.Paging` | Named rules applied to a query the slice owns. |
 | Validation | FluentValidation | Request shape only, never domain rules. |
 | Dispatch | `Loom.Handlers` | No mediator. Handlers + one global decorator chain. |
 | Mapping | Manual | Mapperly only for large mechanical maps. |
 | Logging | `ILogger` + OpenTelemetry | No Serilog. |
-| Orchestration | Aspire 13 | Dev-time. Not in the request path. |
+| Orchestration | Aspire | Dev-time. Not in the request path. |
 | Tests | TUnit, Testcontainers, Respawn | Plus NetArchTest for structure. |
 
 Deliberately absent: MediatR and AutoMapper (both now require paid licences), Wolverine and

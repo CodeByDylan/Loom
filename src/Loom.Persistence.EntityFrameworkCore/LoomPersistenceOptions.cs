@@ -24,6 +24,10 @@ public sealed class LoomPersistenceOptions
     /// <para>
     /// The context must also map the table, via <see cref="OutboxModelBuilderExtensions.AddLoomOutbox" />.
     /// </para>
+    /// <para>
+    /// May be called for more than one context. Everything configurable is registered against the
+    /// context it belongs to, so each outbox keeps its own settings rather than the last call winning.
+    /// </para>
     /// </remarks>
     public LoomPersistenceOptions UseOutbox<TContext>(Action<OutboxOptions>? configure = null)
         where TContext : DbContext
@@ -34,11 +38,15 @@ public sealed class LoomPersistenceOptions
         _registrations.Add(services =>
         {
             services.TryAddSingleton(TimeProvider.System);
-            services.AddSingleton(outbox);
-            services.AddSingleton<OutboxEventSerializer>();
-            services.AddScoped<IDeferredDomainEventSink, OutboxSink>();
+
+            services.AddSingleton(new OutboxSettings<TContext>(outbox));
+            services.AddSingleton<OutboxEventSerializer<TContext>>();
             services.AddSingleton<OutboxProcessor<TContext>>();
             services.AddHostedService<OutboxDeliveryService<TContext>>();
+
+            // Context-agnostic: it writes to whichever context is saving. Added once so that
+            // configuring a second outbox does not register a duplicate.
+            services.TryAddScoped<IDeferredDomainEventSink, OutboxSink>();
         });
 
         return this;

@@ -1,22 +1,21 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Loom.Entities;
+using Microsoft.EntityFrameworkCore;
 
 namespace Loom.Persistence;
 
 /// <summary>
-/// Converts a deferred domain event to and from its recorded form.
+/// Converts a deferred domain event to and from its recorded form, for one context's outbox.
 /// </summary>
-internal sealed class OutboxEventSerializer(OutboxOptions options)
+/// <typeparam name="TContext">The context whose outbox is being served.</typeparam>
+internal sealed class OutboxEventSerializer<TContext>(OutboxSettings<TContext> settings)
+    where TContext : DbContext
 {
-    private static readonly ConcurrentDictionary<string, Type> ResolvedTypes = new();
-
-    internal static string TypeNameOf(IDeferredDomainEvent domainEvent) =>
-        domainEvent.GetType().FullName
-        ?? throw new InvalidOperationException("A deferred domain event must be a named type.");
-
-    internal static string Serialize(IDeferredDomainEvent domainEvent) =>
-        JsonSerializer.Serialize(domainEvent, domainEvent.GetType());
+    // Per instance rather than shared. The cache maps a name to a type, and which type a name resolves
+    // to depends on the assemblies this outbox was configured with, so a shared cache would let one
+    // context's configuration answer another's lookups.
+    private readonly ConcurrentDictionary<string, Type> _resolvedTypes = new();
 
     internal IDomainEvent Deserialize(OutboxMessage message)
     {
@@ -30,11 +29,11 @@ internal sealed class OutboxEventSerializer(OutboxOptions options)
 
     // Resolved by full name rather than assembly-qualified name, so that a version bump does not
     // orphan messages already recorded.
-    private Type ResolveType(string fullName) => ResolvedTypes.GetOrAdd(fullName, name =>
+    private Type ResolveType(string fullName) => _resolvedTypes.GetOrAdd(fullName, name =>
     {
         Type[] matches =
         [
-            .. options.EventAssemblies
+            .. settings.Options.EventAssemblies
                 .Select(assembly => assembly.GetType(name, throwOnError: false))
                 .Where(type => type is not null)
                 .Select(type => type!)

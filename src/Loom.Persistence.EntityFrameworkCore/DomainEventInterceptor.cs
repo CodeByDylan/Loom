@@ -58,6 +58,41 @@ public sealed class DomainEventInterceptor(
         return await base.SavingChangesAsync(eventData, result, cancellationToken);
     }
 
+    /// <inheritdoc />
+    /// <exception cref="InvalidOperationException">
+    /// The save has pending domain events. Handlers are asynchronous, so they cannot be dispatched
+    /// from the synchronous path.
+    /// </exception>
+    /// <remarks>
+    /// Refuses rather than dispatching. Handlers return a task, so honouring them here would mean
+    /// blocking on one, which risks deadlock and thread-pool starvation depending on the caller's
+    /// context. Silently letting the save through instead would be worse: the events would be lost
+    /// and a rule meant to react to a change would simply never run.
+    /// <para>
+    /// A save with nothing to dispatch is allowed through, so synchronous saves are only refused when
+    /// they would actually drop something.
+    /// </para>
+    /// </remarks>
+    public override InterceptionResult<int> SavingChanges(
+        DbContextEventData eventData,
+        InterceptionResult<int> result)
+    {
+        ArgumentNullException.ThrowIfNull(eventData);
+
+        if (eventData.Context is not null && HasPendingEvents(eventData.Context))
+        {
+            throw new InvalidOperationException(
+                "Saving synchronously would discard pending domain events, because their handlers are "
+                + "asynchronous. Call SaveChangesAsync instead.");
+        }
+
+        return base.SavingChanges(eventData, result);
+    }
+
+    private static bool HasPendingEvents(DbContext context) => context.ChangeTracker
+        .Entries<IAggregateRoot>()
+        .Any(entry => entry.Entity.DomainEvents.Count > 0);
+
     private async Task DrainAsync(DbContext context, CancellationToken cancellationToken)
     {
         for (int pass = 0; pass < MaximumDrainPasses; pass++)

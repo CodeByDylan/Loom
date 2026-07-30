@@ -180,6 +180,35 @@ public class DomainEventDispatchTests
     }
 
     [Test]
+    public async Task Saving_Synchronously_With_Pending_Events_Is_Refused()
+    {
+        await using TestHost host = await TestHost.CreateAsync(Handlers<AuditingHandler>);
+        using IServiceScope scope = host.CreateScope();
+        TestDbContext context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        Order order = new(Id<Customer>.New(), 500);
+        context.Orders.Add(order);
+        order.Cancel();
+
+        // Handlers are asynchronous, so the synchronous path cannot honour them. Letting the save
+        // through would discard the events silently, which is the one outcome worth refusing.
+        await Assert.That(() => context.SaveChanges()).Throws<InvalidOperationException>();
+    }
+
+    [Test]
+    public async Task Saving_Synchronously_With_Nothing_Pending_Is_Allowed()
+    {
+        await using TestHost host = await TestHost.CreateAsync(Handlers<AuditingHandler>);
+        using IServiceScope scope = host.CreateScope();
+        TestDbContext context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        context.Orders.Add(new Order(Id<Customer>.New(), 500));
+
+        // Nothing to drop, so nothing to refuse.
+        await Assert.That(context.SaveChanges()).IsGreaterThan(0);
+    }
+
+    [Test]
     public async Task A_Deferred_Event_Without_An_Outbox_Fails_Loudly()
     {
         await using TestHost host = await TestHost.CreateAsync();

@@ -15,8 +15,8 @@ internal sealed class OutboxSink(TimeProvider clock) : IDeferredDomainEventSink
         context.Add(new OutboxMessage
         {
             OccurredAt = clock.GetUtcNow(),
-            EventType = OutboxEventSerializer.TypeNameOf(domainEvent),
-            Payload = OutboxEventSerializer.Serialize(domainEvent),
+            EventType = OutboxPayload.TypeNameOf(domainEvent),
+            Payload = OutboxPayload.Serialize(domainEvent),
         });
     }
 }

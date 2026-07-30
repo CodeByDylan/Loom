@@ -15,10 +15,12 @@ namespace Loom.Persistence;
 /// </remarks>
 public sealed class OutboxProcessor<TContext>(
     IServiceScopeFactory scopes,
-    OutboxOptions options,
+    OutboxSettings<TContext> settings,
     TimeProvider clock)
     where TContext : DbContext
 {
+    private readonly OutboxOptions _options = settings.Options;
+
     /// <summary>
     /// Attempts delivery of one batch of owed messages.
     /// </summary>
@@ -34,12 +36,13 @@ public sealed class OutboxProcessor<TContext>(
         using IServiceScope scope = scopes.CreateScope();
         TContext context = scope.ServiceProvider.GetRequiredService<TContext>();
         IDomainEventDispatcher dispatcher = scope.ServiceProvider.GetRequiredService<IDomainEventDispatcher>();
-        OutboxEventSerializer serializer = scope.ServiceProvider.GetRequiredService<OutboxEventSerializer>();
+        OutboxEventSerializer<TContext> serializer = scope.ServiceProvider
+            .GetRequiredService<OutboxEventSerializer<TContext>>();
 
         List<OutboxMessage> owed = await context.Set<OutboxMessage>()
             .Where(message => message.DeliveredAt == null && !message.Abandoned)
             .OrderBy(message => message.OccurredAt)
-            .Take(options.BatchSize)
+            .Take(_options.BatchSize)
             .ToListAsync(cancellationToken);
 
         if (owed.Count is 0)
@@ -60,7 +63,7 @@ public sealed class OutboxProcessor<TContext>(
     private async Task DeliverAsync(
         OutboxMessage message,
         IDomainEventDispatcher dispatcher,
-        OutboxEventSerializer serializer,
+        OutboxEventSerializer<TContext> serializer,
         CancellationToken cancellationToken)
     {
         message.Attempts++;
@@ -91,7 +94,7 @@ public sealed class OutboxProcessor<TContext>(
     {
         message.LastError = error;
 
-        if (message.Attempts >= options.MaximumAttempts)
+        if (message.Attempts >= _options.MaximumAttempts)
         {
             message.Abandoned = true;
         }
