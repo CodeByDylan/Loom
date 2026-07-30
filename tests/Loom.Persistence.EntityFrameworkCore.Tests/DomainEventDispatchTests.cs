@@ -223,6 +223,46 @@ public sealed class DomainEventDispatchTests
         await Assert.That(async () => await context.SaveChangesAsync()).Throws<InvalidOperationException>();
     }
 
+    [Test]
+    public async Task A_Chain_That_Settles_On_The_Final_Pass_Is_Allowed()
+    {
+        await using TestHost host = await TestHost.CreateAsync(services =>
+            services.AddScoped<IDomainEventHandler<OrderCascaded>, ChainingHandler>());
+
+        using IServiceScope scope = host.CreateScope();
+        TestDbContext context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        Order order = new(Id<Customer>.New(), 500);
+        context.Orders.Add(order);
+
+        // One link per pass, so this consumes exactly the passes allowed and raises nothing on the
+        // last. The limit counts passes rather than events, and a chain that ends on the final pass has
+        // not exceeded anything.
+        order.Cascade(DomainEventInterceptor.MaximumDrainPasses - 1);
+
+        await Assert.That(await context.SaveChangesAsync()).IsGreaterThan(0);
+        await Assert.That(host.Recorder.Handled.Count).IsEqualTo(DomainEventInterceptor.MaximumDrainPasses);
+    }
+
+    [Test]
+    public async Task A_Handler_Feeding_Itself_Is_Refused()
+    {
+        await using TestHost host = await TestHost.CreateAsync(services =>
+            services.AddScoped<IDomainEventHandler<OrderCascaded>, ChainingHandler>());
+
+        using IServiceScope scope = host.CreateScope();
+        TestDbContext context = scope.ServiceProvider.GetRequiredService<TestDbContext>();
+
+        Order order = new(Id<Customer>.New(), 500);
+        context.Orders.Add(order);
+
+        // One link longer than the passes allow, so an event is still pending when they run out. That,
+        // rather than the pass count alone, is what says a handler is feeding itself.
+        order.Cascade(DomainEventInterceptor.MaximumDrainPasses);
+
+        await Assert.That(async () => await context.SaveChangesAsync()).Throws<InvalidOperationException>();
+    }
+
     private static void Handlers<THandler>(IServiceCollection services)
         where THandler : class, IDomainEventHandler<OrderCancelled> =>
         services.AddScoped<IDomainEventHandler<OrderCancelled>, THandler>();
@@ -284,6 +324,26 @@ public sealed class DomainEventDispatchTests
                 .Single(candidate => candidate.Id == domainEvent.OrderId);
 
             order.Touch();
+            return Task.FromResult(Result.Success);
+        }
+    }
+
+    private sealed class ChainingHandler(TestDbContext context, Recorder recorder)
+        : IDomainEventHandler<OrderCascaded>
+    {
+        public Task<Result> HandleAsync(OrderCascaded domainEvent, CancellationToken cancellationToken)
+        {
+            recorder.Record($"cascaded:{domainEvent.Remaining}");
+
+            if (domainEvent.Remaining > 0)
+            {
+                context.ChangeTracker
+                    .Entries<Order>()
+                    .Select(entry => entry.Entity)
+                    .Single(candidate => candidate.Id == domainEvent.OrderId)
+                    .Cascade(domainEvent.Remaining - 1);
+            }
+
             return Task.FromResult(Result.Success);
         }
     }

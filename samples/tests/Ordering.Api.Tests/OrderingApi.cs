@@ -41,6 +41,10 @@ public sealed class OrderingApi : IAsyncDisposable
     private readonly Respawner _respawner;
     private readonly NpgsqlConnection _resetConnection;
 
+    // Every factory derived from _factory, so each can be shut down. Tests run in parallel, so the list
+    // is guarded.
+    private readonly List<WebApplicationFactory<Program>> _derived = [];
+
     private OrderingApi(
         PostgreSqlContainer container,
         WebApplicationFactory<Program> factory,
@@ -59,7 +63,11 @@ public sealed class OrderingApi : IAsyncDisposable
 
         await container.StartAsync();
 
-        WebApplicationFactory<Program> factory = new OrderingFactory(container.GetConnectionString(), SigningKey, Issuer);
+        WebApplicationFactory<Program> factory = new OrderingFactory(
+            container.GetConnectionString(),
+            SigningKey,
+            Issuer,
+            "Development");
 
         using (IServiceScope scope = factory.Services.CreateScope())
         {
@@ -107,10 +115,29 @@ public sealed class OrderingApi : IAsyncDisposable
         WebApplicationFactory<Program> configured = _factory
             .WithWebHostBuilder(builder => builder.ConfigureServices(configure));
 
+        // Kept, not dropped. This builds a second host with its own server and service provider, and
+        // abandoning it leaves both running until the collector happens to reach it — which, across a
+        // suite, means several live hosts competing for the same database.
+        lock (_derived)
+        {
+            _derived.Add(configured);
+        }
+
         HttpClient client = configured.CreateClient();
         client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenFor(customer));
         return client;
     }
+
+    /// <summary>
+    /// A host configured for the given environment and signing key, not yet built.
+    /// </summary>
+    /// <remarks>
+    /// For the startup checks, where what happens <em>while</em> the host is built is the thing under
+    /// test. Reuses the container's database so that startup fails for the reason the test intends
+    /// rather than for want of somewhere to connect. The caller owns the result.
+    /// </remarks>
+    public WebApplicationFactory<Program> FactoryFor(string environment, string signingKey) =>
+        new OrderingFactory(_container.GetConnectionString(), signingKey, Issuer, environment);
 
     public async Task InDatabaseAsync(Func<OrderingDbContext, Task> work)
     {
@@ -149,11 +176,30 @@ public sealed class OrderingApi : IAsyncDisposable
     public async ValueTask DisposeAsync()
     {
         await _resetConnection.DisposeAsync();
+
+        WebApplicationFactory<Program>[] derived;
+        lock (_derived)
+        {
+            derived = [.. _derived];
+            _derived.Clear();
+        }
+
+        // Derived factories first: each was built from the shared one, so disposing that first would
+        // pull the ground out from under hosts still being shut down.
+        foreach (WebApplicationFactory<Program> configured in derived)
+        {
+            await configured.DisposeAsync();
+        }
+
         await _factory.DisposeAsync();
         await _container.DisposeAsync();
     }
 
-    private sealed class OrderingFactory(string connectionString, string signingKey, string issuer)
+    private sealed class OrderingFactory(
+        string connectionString,
+        string signingKey,
+        string issuer,
+        string environment)
         : WebApplicationFactory<Program>
     {
         protected override IHost CreateHost(IHostBuilder builder)
@@ -167,7 +213,8 @@ public sealed class OrderingApi : IAsyncDisposable
             ]));
 
             // Pinned so the route table is deterministic: the health endpoints are development-only.
-            builder.UseEnvironment("Development");
+            // Overridable only so the startup checks can be exercised outside Development.
+            builder.UseEnvironment(environment);
 
             // The outbox delivery worker starts a pass immediately, so left running it could deliver a
             // message between a test recording one and asserting it is still owed. Tests drive delivery

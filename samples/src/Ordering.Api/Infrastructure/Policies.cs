@@ -10,8 +10,13 @@ namespace Ordering.Api.Infrastructure;
 /// </summary>
 public static class Policies
 {
+    /// <summary>Required to look at orders. Satisfied by any caller who identifies a customer.</summary>
     public const string OrdersRead = "orders:read";
 
+    /// <summary>
+    /// Required to place, cancel or ship an order. Whether the order is <em>theirs</em> is a separate
+    /// question the handler answers, because it needs the order.
+    /// </summary>
     public const string OrdersWrite = "orders:write";
 }
 
@@ -25,6 +30,13 @@ public static class Policies
 /// </remarks>
 public interface ICurrentCustomer
 {
+    /// <summary>
+    /// Gets the customer named by the request's claim.
+    /// </summary>
+    /// <exception cref="InvalidOperationException">
+    /// The request carries no usable claim. Only reachable from an endpoint that forgot to require
+    /// authorization, so it is a bug rather than a refusal.
+    /// </exception>
     Id<Customer> Id { get; }
 }
 

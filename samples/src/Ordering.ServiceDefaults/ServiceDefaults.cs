@@ -19,6 +19,17 @@ namespace Microsoft.Extensions.Hosting;
 /// </remarks>
 public static class ServiceDefaults
 {
+    /// <summary>
+    /// Adds telemetry, a liveness check, service discovery and resilient HTTP defaults.
+    /// </summary>
+    /// <typeparam name="TBuilder">The builder being configured.</typeparam>
+    /// <param name="builder">The application builder.</param>
+    /// <returns>The same builder, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="builder" /> is <see langword="null" />.</exception>
+    /// <remarks>
+    /// The one call every service makes. Outgoing HTTP clients get retries and a circuit breaker by
+    /// default, so a service that forgets to ask for resilience still has it.
+    /// </remarks>
     public static TBuilder AddServiceDefaults<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
@@ -40,6 +51,18 @@ public static class ServiceDefaults
         return builder;
     }
 
+    /// <summary>
+    /// Turns on structured logs, metrics and traces, exporting them only if a collector is configured.
+    /// </summary>
+    /// <typeparam name="TBuilder">The builder being configured.</typeparam>
+    /// <param name="builder">The application builder.</param>
+    /// <returns>The same builder, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="builder" /> is <see langword="null" />.</exception>
+    /// <remarks>
+    /// Instrumentation is always collected; the OTLP exporter is added only when
+    /// <c>OTEL_EXPORTER_OTLP_ENDPOINT</c> is set. That way a service run on its own does not spend the
+    /// application's startup failing to reach a collector that is not there.
+    /// </remarks>
     public static TBuilder ConfigureOpenTelemetry<TBuilder>(this TBuilder builder)
         where TBuilder : IHostApplicationBuilder
     {
@@ -68,6 +91,17 @@ public static class ServiceDefaults
         return builder;
     }
 
+    /// <summary>
+    /// Maps the health endpoints, in Development only.
+    /// </summary>
+    /// <param name="app">The application to map onto.</param>
+    /// <returns>The same application, so calls can be chained.</returns>
+    /// <exception cref="ArgumentNullException"><paramref name="app" /> is <see langword="null" />.</exception>
+    /// <remarks>
+    /// Deliberately not mapped elsewhere: these endpoints are unauthenticated and describe the service's
+    /// internals, so exposing them in a deployment is a decision to make on purpose, with whatever
+    /// network restriction that deployment has.
+    /// </remarks>
     public static WebApplication MapDefaultEndpoints(this WebApplication app)
     {
         ArgumentNullException.ThrowIfNull(app);
