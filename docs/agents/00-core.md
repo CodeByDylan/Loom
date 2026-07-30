@@ -8,7 +8,7 @@ is yours now. Edit it freely.
 
 ## 1. Orientation
 
-```
+```text
 src/MyApp.Domain/            pure domain; Loom packages + BCL only
 src/MyApp.<Archetype>/       host; every slice lives here
 src/MyApp.AppHost/           Aspire orchestration; dev-time only, ships nothing
