@@ -44,7 +44,14 @@
     <Project Path="tests/Loom.Handlers.Tests/Loom.Handlers.Tests.csproj" />
     <Project Path="tests/Loom.Handlers.FluentValidation.Tests/Loom.Handlers.FluentValidation.Tests.csproj" />
   </Folder>
-  <Folder Name="/Paging/" />
+    <Folder Name="/Persistence/" />
+  <Folder Name="/Persistence/src/">
+    <Project Path="src/Loom.Persistence.EntityFrameworkCore/Loom.Persistence.EntityFrameworkCore.csproj" />
+  </Folder>
+  <Folder Name="/Persistence/tests/">
+    <Project Path="tests/Loom.Persistence.EntityFrameworkCore.Tests/Loom.Persistence.EntityFrameworkCore.Tests.csproj" />
+  </Folder>
+<Folder Name="/Paging/" />
   <Folder Name="/Paging/src/">
     <Project Path="src/Loom.Paging/Loom.Paging.csproj" />
   </Folder>
