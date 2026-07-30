@@ -53,12 +53,29 @@ else
     fi
 fi
 
-# 3. The repository's own guidance starts with its heading.
+# 3. The AGENTS.md baked into each template still matches what the fragments would produce. The
+#    template ships a finished file rather than assembling one at scaffold time, so an edit to
+#    docs/agents/ would otherwise reach consumers only whenever someone happened to regenerate it.
+for template in src/Loom.Templates/templates/*/; do
+    archetype="${template#src/Loom.Templates/templates/loom-}"
+    archetype="${archetype%/}"
+
+    if ! scripts/new-agents-md.sh --out "$assembled/template-$archetype.md" "$archetype" >/dev/null 2>&1; then
+        fail "cannot assemble the $archetype template's guidance"
+        continue
+    fi
+
+    if ! diff -q "$assembled/template-$archetype.md" "$template/AGENTS.md" >/dev/null 2>&1; then
+        fail "$template/AGENTS.md is stale; regenerate it with: scripts/new-agents-md.sh --out $template/AGENTS.md $archetype --force"
+    fi
+done
+
+# 4. The repository's own guidance starts with its heading.
 if ! head -1 AGENTS.md | grep -qxF '# AGENTS.md'; then
     fail "AGENTS.md: line 1 must be '# AGENTS.md'"
 fi
 
-# 4. Fused-line signatures, across every tracked Markdown file. Concatenating a table row onto
+# 5. Fused-line signatures, across every tracked Markdown file. Concatenating a table row onto
 #    something else leaves no space, which is what makes these precise rather than heuristic.
 while IFS= read -r document; do
     if grep -nE '\|(#|<!--)' "$document" >&2; then

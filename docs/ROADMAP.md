@@ -8,9 +8,30 @@ outgrown this file.
 
 | Package | Tier | Why |
 | --- | --- | --- |
-| `Loom.Templates` | n/a | `dotnet new` templates that scaffold a solution and assemble its `AGENTS.md` from `docs/agents/`. Replaces `scripts/new-agents-md.sh`. |
+| `loom-worker`, `loom-cli` templates | n/a | The remaining two archetypes. Held back deliberately — see `Loom.Templates` below. |
 
 ## Built
+
+`Loom.Templates` shipped with **one archetype**, `loom-api`, not three. The API is the only archetype
+with a reference implementation: `samples/Ordering` builds, runs and has already had four defects shaken
+out of it, so the template was derived from something proven rather than invented to match a document.
+There is no reference worker and no reference CLI, and inventing their structure inside a package whose
+entire purpose is that people copy it unexamined is how a guess becomes everyone's convention.
+
+So `scripts/new-agents-md.sh` survives. This entry originally said the templates replace it; that is not
+true while two archetypes still need it, and it stays until they exist.
+
+The `AGENTS.md` is assembled at pack time rather than at scaffold time, and the assembled copy is
+committed so the package content is exactly what the repository shows. `check-docs.sh` regenerates it and
+fails if it has drifted, because a template that ships stale guidance is worse than one that ships none.
+
+Building it turned up three defects that no Loom test could have caught, because they only exist in
+generated output: a `using` for a namespace that does not exist (`Loom.Results.AspNetCore` is a package
+identifier, not a namespace), an Aspire resource name derived from the project name and therefore
+invalid for any name containing a dot, and the class the Aspire SDK generates for a project reference,
+which turns dots into underscores and so cannot be produced by the template engine's name substitution
+alone. CI now scaffolds and builds a solution called `Acme.Billing` on every push — the dotted name is
+the case that breaks and the one people actually use.
 
 `Loom.Outbox.Diagnostics` shipped as `OutboxAdministration<TContext>` **inside
 `Loom.Persistence.EntityFrameworkCore`**, for the same reason as the logging decorator: it needs the

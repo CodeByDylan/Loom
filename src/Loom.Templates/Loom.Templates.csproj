@@ -1,0 +1,16 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Title>Loom project templates</Title>
+        <Description>dotnet new templates that scaffold a solution built on Loom, with the guidance for working in it already assembled.</Description>
+        <PackageTags>dotnet-new;templates;loom;vertical-slice;clean-architecture</PackageTags>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <!-- The whole payload. bin and obj are excluded because a template is a runnable project:
+             anyone can open templates/loom-api and build it, and the leftovers must not be packed. -->
+        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+        <Compile Remove="**\*" />
+    </ItemGroup>
+
+</Project>
