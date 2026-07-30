@@ -65,11 +65,24 @@ while IFS= read -r document; do
         fail "$document: a table row is fused to a heading or a comment (see above)"
     fi
 
-    # Adjacent pipes are legal Markdown for an empty cell, but this repository writes empty cells
-    # with a space — `| |`, never `||` — precisely so that adjacent pipes only ever mean two rows
-    # joined into one. This check is what enforces that convention.
-    if grep -nE '^\|.*\|\|' "$document" >&2; then
-        fail "$document: adjacent pipes in a table row; write an empty cell as '| |', since '||' is reserved as the signature of two joined rows"
+    # Within one table, every row carries the same number of cells — Markdown requires as much for
+    # the table to render, since an unescaped pipe inside a cell splits it. Two rows joined into one
+    # roughly double the count, so a join trips this without any opinion on how an empty cell is
+    # written: '||' and '| |' both keep the count intact and both pass.
+    if ! awk '
+        /^\|/ {
+            pipes = gsub(/\|/, "|");
+            if (in_table && pipes != expected) {
+                printf "%s: line %d has %d cells where the table above it has %d\n", FILENAME, FNR, pipes - 1, expected - 1 > "/dev/stderr";
+                bad = 1;
+            }
+            if (!in_table) { in_table = 1; expected = pipes; }
+            next;
+        }
+        { in_table = 0; }
+        END { exit bad; }
+    ' "$document"; then
+        fail "$document: a table row has a different cell count from its table, which usually means two rows were joined"
     fi
 done < <(git ls-files '*.md')
 
