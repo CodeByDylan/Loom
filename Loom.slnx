@@ -1,0 +1,68 @@
+<Solution>
+  <Folder Name="/- Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="LICENSE" />
+    <File Path="Loom.slnx" />
+    <File Path="README.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+    <File Path="dotnet-tools.json" />
+  </Folder>
+  <Folder Name="/- Solution Items/ci/">
+    <File Path=".github/workflows/ci.yml" />
+  </Folder>
+  <Folder Name="/- Solution Items/docs/">
+    <File Path="docs/ROADMAP.md" />
+  </Folder>
+  <Folder Name="/- Solution Items/docs/agents/">
+    <File Path="docs/agents/00-core.md" />
+    <File Path="docs/agents/10-api.md" />
+    <File Path="docs/agents/10-worker.md" />
+    <File Path="docs/agents/10-cli.md" />
+  </Folder>
+  <Folder Name="/- Solution Items/scripts/">
+    <File Path="scripts/new-agents-md.sh" />
+  </Folder>
+  <Folder Name="/Entities/" />
+  <Folder Name="/Entities/src/">
+    <Project Path="src/Loom.Entities/Loom.Entities.csproj" />
+  </Folder>
+  <Folder Name="/Entities/tests/">
+    <Project Path="tests/Loom.Entities.Tests/Loom.Entities.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Handlers/" />
+  <Folder Name="/Handlers/src/">
+    <Project Path="src/Loom.Handlers.Abstractions/Loom.Handlers.Abstractions.csproj" />
+    <Project Path="src/Loom.Handlers/Loom.Handlers.csproj" />
+    <Project Path="src/Loom.Handlers.FluentValidation/Loom.Handlers.FluentValidation.csproj" />
+  </Folder>
+  <Folder Name="/Handlers/tests/">
+    <Project Path="tests/Loom.Handlers.Abstractions.Tests/Loom.Handlers.Abstractions.Tests.csproj" />
+    <Project Path="tests/Loom.Handlers.Tests/Loom.Handlers.Tests.csproj" />
+    <Project Path="tests/Loom.Handlers.FluentValidation.Tests/Loom.Handlers.FluentValidation.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Paging/" />
+  <Folder Name="/Paging/src/">
+    <Project Path="src/Loom.Paging/Loom.Paging.csproj" />
+  </Folder>
+  <Folder Name="/Paging/tests/">
+    <Project Path="tests/Loom.Paging.Tests/Loom.Paging.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Results/" />
+  <Folder Name="/Results/src/">
+    <Project Path="src/Loom.Results/Loom.Results.csproj" />
+  </Folder>
+  <Folder Name="/Results/tests/">
+    <Project Path="tests/Loom.Results.Tests/Loom.Results.Tests.csproj" />
+  </Folder>
+  <Folder Name="/Specifications/" />
+  <Folder Name="/Specifications/src/">
+    <Project Path="src/Loom.Specifications/Loom.Specifications.csproj" />
+  </Folder>
+  <Folder Name="/Specifications/tests/">
+    <Project Path="tests/Loom.Specifications.Tests/Loom.Specifications.Tests.csproj" />
+  </Folder>
+</Solution>

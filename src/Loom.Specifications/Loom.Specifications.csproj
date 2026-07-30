@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Composable, named business rules over a type: a predicate plus optional eager-loading and ordering, expressed as pure expression trees. Depends on nothing.</Description>
+    </PropertyGroup>
+
+</Project>
