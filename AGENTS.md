@@ -1,4 +1,5 @@
-# AGENTS.md
+| 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. || 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` |
+| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, and an optional outbox. | A database provider — the consumer picks one. Cursor paging. |# AGENTS.md
 
 Rules for working **on Loom itself**. Loom is a family of foundational .NET packages,
 consumed by other projects. Rules for those consuming projects live in
@@ -17,6 +18,7 @@ Packages that exist today:
 | `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` and `IHandler<TRequest>`, as pure types, so a consumer's domain project can declare handlers. | Anything touching a container. |
 | `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. | A dispatcher. See §5. |
 | `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
+| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, and an optional outbox. | A database provider — the consumer picks one. Cursor paging. |
 
 Every package listed has code. There are no placeholder projects left.
 
@@ -60,12 +62,14 @@ of letting a tier become a web of mutual references.
 | 0 | `Loom.Results` | **Nothing.** BCL only. |
 | 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. |
 | 2 | `Loom.Handlers` | Tiers 0–1 + `Microsoft.Extensions.*` **Abstractions** packages only. |
-| 3 | `Loom.Handlers.FluentValidation` | Tiers 0–2 + one third-party dependency, named in the package ID. |
+| 3 | `Loom.Handlers.FluentValidation`, `Loom.Persistence.EntityFrameworkCore` | Tiers 0–2 + one third-party dependency, named in the package ID. |
 
 - Tier 0 is absolute. `Loom.Results` appears in every consumer's method signatures, so any dependency it takes is in every consumer's transitive graph forever.
 - At Tier 2, reference abstractions packages only — `Microsoft.Extensions.Logging.Abstractions`, never `Microsoft.Extensions.Logging`. The non-abstractions package is the one that shows up in application code; it does not belong in a library.
 - Third-party coupling is declared in the package ID: `Loom.Persistence.EntityFrameworkCore`, never a `Loom.Persistence` that quietly pulls in EF Core. A consumer should be able to read their NuGet list and know their coupling.
-- The `dotnet-ef` tool in `dotnet-tools.json` exists for a future Tier 3 package. EF Core must not appear in Tiers 0–2.
+- "One third-party dependency" means one *product*, not one NuGet identifier. `Loom.Persistence.EntityFrameworkCore` references both `Microsoft.EntityFrameworkCore` and its `.Relational` companion, because mapping a table it defines is impossible without the latter. A second, unrelated product would not be permitted.
+- A Tier 3 package stays **provider-neutral** where the product allows it. `Loom.Persistence.EntityFrameworkCore` does not reference Npgsql; a consumer chooses its own provider. Naming a provider would make the package a second opinion about the database.
+- The `dotnet-ef` tool in `dotnet-tools.json` serves `Loom.Persistence.EntityFrameworkCore`. EF Core must not appear in Tiers 0–2.
 - All versions live in `Directory.Packages.props`. Never put a `Version` attribute on a `PackageReference`.
 
 ## 5. API design
@@ -85,6 +89,8 @@ of letting a tier become a web of mutual references.
 - **Entities are classes; value objects and domain events are records.** An entity is equal to another by *identity*, so structural equality is actively wrong for it — two `Order`s with the same `Id` are the same order however far their fields have diverged. `record` is the reflexive default for a new type now, which is exactly why this needs saying. `Entity<TSelf>` and `AggregateRoot<TSelf>` are the second and third documented exceptions to seal-by-default.
 - **A specification is a named rule, never a parameter bag, and never consumed by a repository.** `OverdueOrders(customerId)` is the shape. A specification that grows a boolean toggling part of its query is two specifications sharing a name — split it. Specifications are applied to an `IQueryable` the caller owns; the moment something else consumes them, the repository we rejected has returned. `Specification<T>` is the fourth documented exception to seal-by-default.
 - **Composition is over criteria, not whole specifications.** Two specifications each carrying their own ordering have no defined combination. Combine predicates with `Criteria.And`/`Or`/`Not`, which rebind parameters properly — never wrap in `Expression.Invoke`, which many query providers cannot translate.
+- **A request handler and a domain event handler are different abstractions, deliberately.** `IHandler` is request/response: exactly one per request type, invoked by a caller that wants the result, wrapped in the decorator chain. `IDomainEventHandler` is fan-out: any number per event, invoked by infrastructure, no chain, nobody awaiting a value. Keeping them separate is what preserves the no-notifications rule above; collapsing them is what would break it.
+- **Store an instant that must be ordered as UTC ticks, not as a `DateTimeOffset`.** Providers disagree on whether an offset-bearing value can be ordered at all — SQLite refuses — so a provider-neutral package that orders by time cannot store the native type.
 - **Do not present `Id<TEntity>` ordering as creation order.** Version 7 GUIDs embed a millisecond timestamp, and .NET does not make them monotonic within one — measured at ~50% inversion for values created back to back. Ordering is for index locality and stable sorting only. Never paginate on it, and never use it to decide which of two things happened first.
 
 ## 6. Testing
