@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Guards the documents nothing else checks.
 #
-# The verify block has no opinion on markdown: it is neither built nor formatted. Two files were
+# The verify block has no opinion on Markdown: it is neither built nor formatted. Two files were
 # silently corrupted before this existed — a table row fused onto a heading in AGENTS.md, and the same
 # damage in a template fragment, where it also stopped the assembly script recognising the marker so
 # every assembled file leaked an internal comment. Both survived review and CI.
@@ -58,7 +58,7 @@ if ! head -1 AGENTS.md | grep -qxF '# AGENTS.md'; then
     fail "AGENTS.md: line 1 must be '# AGENTS.md'"
 fi
 
-# 4. Fused-line signatures, across every tracked markdown file. Concatenating a table row onto
+# 4. Fused-line signatures, across every tracked Markdown file. Concatenating a table row onto
 #    something else leaves no space, which is what makes these precise rather than heuristic.
 while IFS= read -r document; do
     if grep -nE '\|(#|<!--)' "$document" >&2; then
