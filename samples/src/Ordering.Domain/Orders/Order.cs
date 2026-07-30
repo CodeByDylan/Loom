@@ -26,7 +26,9 @@ public sealed class Order : AggregateRoot<Order>
 
     public int Total => _lines.Sum(line => line.Amount);
 
-    public IReadOnlyList<OrderLine> Lines => _lines;
+    // A read-only view, not the backing list typed as one. Returning the list would let a caller cast
+    // it back and add lines, which would change Total behind the aggregate's back.
+    public IReadOnlyList<OrderLine> Lines => _lines.AsReadOnly();
 
     /// <summary>
     /// Places an order. Construction is a decision, so it returns a result rather than throwing.
@@ -38,6 +40,17 @@ public sealed class Order : AggregateRoot<Order>
         if (lines.Count is 0)
         {
             return OrderErrors.NoLines;
+        }
+
+        // Validated before anything is constructed. OrderLine guards itself by throwing, which is right
+        // for a programming error but wrong here: a caller handed us data, and bad data is an expected
+        // failure this factory has a way to report.
+        foreach ((string sku, int amount) in lines)
+        {
+            if (string.IsNullOrWhiteSpace(sku) || amount <= 0)
+            {
+                return OrderErrors.InvalidLine;
+            }
         }
 
         Order order = new(customerId, placedOn);

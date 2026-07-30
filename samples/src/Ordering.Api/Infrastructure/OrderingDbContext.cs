@@ -30,8 +30,16 @@ public sealed class OrderingDbContext(DbContextOptions<OrderingDbContext> option
             order.HasKey(entity => entity.Id);
             order.Property(entity => entity.Status).HasConversion<string>();
             order.HasMany(entity => entity.Lines).WithOne().HasForeignKey(line => line.OrderId);
-            order.HasIndex(entity => entity.CustomerId);
             order.Ignore(entity => entity.Total);
+
+            // A constraint, not a navigation: an order still reaches its customer by identity only, so
+            // the aggregates stay separate. Without this the database would happily hold orders for
+            // customers that do not exist. Restricting the delete means a customer with orders cannot
+            // be removed silently.
+            order.HasOne<Customer>()
+                .WithMany()
+                .HasForeignKey(entity => entity.CustomerId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         modelBuilder.Entity<OrderLine>(line =>
@@ -47,7 +55,16 @@ public sealed class OrderingDbContext(DbContextOptions<OrderingDbContext> option
         });
 
         modelBuilder.Entity<CancellationRecord>().HasKey(record => record.Id);
-        modelBuilder.Entity<ShipmentNotification>().HasKey(notification => notification.Id);
+
+        modelBuilder.Entity<ShipmentNotification>(notification =>
+        {
+            notification.HasKey(entity => entity.Id);
+
+            // Deferred delivery is at least once, so this handler can run twice. Its own check is a
+            // fast path, not a guarantee: two deliveries running at once would both pass it. The
+            // constraint is what actually makes one notification per order true.
+            notification.HasIndex(entity => entity.OrderId).IsUnique();
+        });
 
         modelBuilder.AddLoomOutbox();
     }

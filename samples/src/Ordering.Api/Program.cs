@@ -79,9 +79,12 @@ builder.Services
         };
     });
 
+// The claim must be present *and* parseable. Requiring only its presence would let a malformed value
+// through, and the first thing to read it would then throw — turning a request that should be refused
+// into a server error.
 builder.Services.AddAuthorizationBuilder()
-    .AddPolicy(Policies.OrdersRead, policy => policy.RequireClaim(CurrentCustomer.ClaimType))
-    .AddPolicy(Policies.OrdersWrite, policy => policy.RequireClaim(CurrentCustomer.ClaimType));
+    .AddPolicy(Policies.OrdersRead, policy => policy.RequireAssertion(CurrentCustomer.IsIdentifiable))
+    .AddPolicy(Policies.OrdersWrite, policy => policy.RequireAssertion(CurrentCustomer.IsIdentifiable));
 
 builder.Services.AddProblemDetails();
 

@@ -14,6 +14,9 @@ jobs:
         with:
           # MinVer derives the version from tags, so it needs full history.
           fetch-depth: 0
+          # Nothing here pushes, so the token has no reason to remain in the git config
+          # where any later step could read it.
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -35,6 +38,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v4
         with:

@@ -19,6 +19,8 @@ internal sealed class NotifyCustomerOfShipment(OrderingDbContext database)
 {
     public async Task<Result> HandleAsync(OrderShipped domainEvent, CancellationToken cancellationToken)
     {
+        // A fast path, not a guarantee. Two deliveries running at once would both pass it, so the unique
+        // index on the table is what actually makes one notification per order true.
         bool alreadyNotified = await database.ShipmentNotifications
             .AnyAsync(notification => notification.OrderId == domainEvent.OrderId, cancellationToken);
 
@@ -33,8 +35,26 @@ internal sealed class NotifyCustomerOfShipment(OrderingDbContext database)
             CustomerId = domainEvent.CustomerId,
         });
 
-        // Saved here, because the transaction that raised this event committed long ago.
-        await database.SaveChangesAsync(cancellationToken);
+        try
+        {
+            // Saved here, because the transaction that raised this event committed long ago.
+            await database.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException)
+        {
+            // Either the constraint rejected a duplicate — in which case the work is already done and
+            // this delivery has nothing to be sorry about — or something else went wrong and should be
+            // reported. Asking the database which it was avoids guessing at provider error codes.
+            database.ChangeTracker.Clear();
+
+            bool nowNotified = await database.ShipmentNotifications
+                .AnyAsync(notification => notification.OrderId == domainEvent.OrderId, cancellationToken);
+
+            if (!nowNotified)
+            {
+                throw;
+            }
+        }
 
         return Result.Success;
     }

@@ -37,5 +37,10 @@ public sealed class OpenOrdersForCustomer : Specification<Order>
         Where(new OrdersForCustomer(customerId).Criteria!.And(new OpenOrders().Criteria!));
         Include(order => order.Lines);
         OrderByDescending(order => order.PlacedOn);
+
+        // The same tie-breaker as OrdersForCustomer. Orders placed on the same day would otherwise come
+        // back in whatever order the database chose, which a paged reader sees as rows moving between
+        // pages.
+        ThenBy(order => order.Id);
     }
 }

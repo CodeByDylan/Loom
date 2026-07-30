@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 using Microsoft.IdentityModel.Tokens;
 using Npgsql;
@@ -150,6 +151,27 @@ public sealed class OrderingApi : IAsyncDisposable
 
             // Pinned so the route table is deterministic: the health endpoints are development-only.
             builder.UseEnvironment("Development");
+
+            // The outbox delivery worker starts a pass immediately, so left running it could deliver a
+            // message between a test recording one and asserting it is still owed. Tests drive delivery
+            // themselves through OutboxProcessor, which is the behaviour they mean to check. Only that
+            // worker is removed — the test server itself is also a hosted service, and removing every
+            // one tears the host down with it.
+            builder.ConfigureServices(services =>
+            {
+                ServiceDescriptor[] outboxWorkers =
+                [
+                    .. services.Where(descriptor =>
+                        descriptor.ServiceType == typeof(IHostedService)
+                        && descriptor.ImplementationType is { IsGenericType: true } implementation
+                        && implementation.Name.StartsWith("OutboxDeliveryService", StringComparison.Ordinal)),
+                ];
+
+                foreach (ServiceDescriptor worker in outboxWorkers)
+                {
+                    services.Remove(worker);
+                }
+            });
 
             return base.CreateHost(builder);
         }

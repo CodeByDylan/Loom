@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Loom.Entities;
+using Microsoft.AspNetCore.Authorization;
 using Ordering.Domain.Customers;
 
 namespace Ordering.Api.Infrastructure;
@@ -30,6 +31,24 @@ public interface ICurrentCustomer
 internal sealed class CurrentCustomer(IHttpContextAccessor accessor) : ICurrentCustomer
 {
     public const string ClaimType = "customer_id";
+
+    /// <summary>
+    /// Whether the caller carries a claim that names a customer.
+    /// </summary>
+    /// <remarks>
+    /// Used by the policies, so a malformed claim is refused by the pipeline rather than reaching
+    /// <see cref="Id" /> and throwing. Requiring only that the claim exists would turn a request that
+    /// should be refused into a server error.
+    /// </remarks>
+    public static bool IsIdentifiable(AuthorizationHandlerContext context)
+    {
+        ArgumentNullException.ThrowIfNull(context);
+
+        return Id<Customer>.TryParse(
+            context.User.FindFirstValue(ClaimType),
+            provider: null,
+            out _);
+    }
 
     public Id<Customer> Id
     {

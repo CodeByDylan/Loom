@@ -89,6 +89,9 @@ namespace Ordering.Api.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
                     b.ToTable("ShipmentNotifications");
                 });
 
@@ -150,6 +153,15 @@ namespace Ordering.Api.Migrations
                     b.HasIndex("OrderId");
 
                     b.ToTable("OrderLine");
+                });
+
+            modelBuilder.Entity("Ordering.Domain.Orders.Order", b =>
+                {
+                    b.HasOne("Ordering.Domain.Customers.Customer", null)
+                        .WithMany()
+                        .HasForeignKey("CustomerId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Ordering.Domain.Orders.OrderLine", b =>

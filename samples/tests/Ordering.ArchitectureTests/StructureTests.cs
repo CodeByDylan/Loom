@@ -115,6 +115,18 @@ public class StructureTests
     {
         yield return type;
 
+        // Arrays carry their element type outside the generic arguments, so an Order[] would otherwise
+        // slip past every check below.
+        if (type.IsArray && type.GetElementType() is Type element)
+        {
+            foreach (Type nested in Unwrap(element))
+            {
+                yield return nested;
+            }
+
+            yield break;
+        }
+
         // An identity names the entity it belongs to, and that is the point of it — Id<Order> in a
         // contract is type-safe and binds straight from a route. Only the entity itself must not
         // cross the boundary, so the identity's own argument is not followed.

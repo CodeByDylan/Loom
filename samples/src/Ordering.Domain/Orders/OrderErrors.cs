@@ -10,6 +10,9 @@ public static class OrderErrors
     public static Error NoLines { get; } =
         Errors.Invalid("orders.no_lines", "An order must have at least one line.");
 
+    public static Error InvalidLine { get; } =
+        Errors.Invalid("orders.invalid_line", "Every line needs a stock code and a positive amount.");
+
     public static Error AlreadyCancelled { get; } =
         Errors.Conflict("orders.already_cancelled", "The order is already cancelled.");
 

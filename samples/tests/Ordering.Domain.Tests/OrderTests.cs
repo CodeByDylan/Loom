@@ -85,6 +85,8 @@ public class OrderTests
 
         Result result = order.Ship();
 
+        await Assert.That(result.IsFailure).IsTrue();
+        await Assert.That(result.Error.Category).IsEqualTo(ErrorCategory.Conflict);
         await Assert.That(result.Error.Code).IsEqualTo(OrderErrors.AlreadyCancelled.Code);
     }
 
@@ -94,7 +96,34 @@ public class OrderTests
         Order order = Placed(("sku-1", 100));
         order.Cancel();
 
-        await Assert.That(order.Cancel().Error.Code).IsEqualTo(OrderErrors.AlreadyCancelled.Code);
+        Result result = order.Cancel();
+
+        await Assert.That(result.IsFailure).IsTrue();
+        await Assert.That(result.Error.Category).IsEqualTo(ErrorCategory.Conflict);
+        await Assert.That(result.Error.Code).IsEqualTo(OrderErrors.AlreadyCancelled.Code);
+    }
+
+    [Test]
+    public async Task An_Order_With_A_Blank_Or_Worthless_Line_Is_Rejected()
+    {
+        // Reported, not thrown: a caller handed the factory bad data, which is an expected failure.
+        Result<Order> blankSku = Order.Place(Id<Customer>.New(), Today, [("", 100)]);
+        Result<Order> zeroAmount = Order.Place(Id<Customer>.New(), Today, [("sku-1", 0)]);
+
+        await Assert.That(blankSku.IsFailure).IsTrue();
+        await Assert.That(blankSku.Error.Code).IsEqualTo(OrderErrors.InvalidLine.Code);
+        await Assert.That(zeroAmount.IsFailure).IsTrue();
+        await Assert.That(zeroAmount.Error.Code).IsEqualTo(OrderErrors.InvalidLine.Code);
+    }
+
+    [Test]
+    public async Task Lines_Cannot_Be_Mutated_From_Outside()
+    {
+        Order order = Placed(("sku-1", 100));
+
+        // The view must not be the backing list in disguise, or a caller could cast it and change
+        // Total behind the aggregate's back.
+        await Assert.That(order.Lines is List<OrderLine>).IsFalse();
     }
 
     [Test]
