@@ -25,6 +25,12 @@
     <PropertyGroup Condition="'$(IsTestProject)' == 'false'">
         <GenerateDocumentationFile>true</GenerateDocumentationFile>
         <IsPackable>true</IsPackable>
+        <!-- The identifier is prefixed with the organisation; the namespaces and assemblies are not.
+             Only the identifier needs the prefix, because that is what nuget.org can reserve — and
+             "Loom." cannot be: it is a common word, it does not identify anyone, and eighteen packages
+             under it already belong to other authors. Meanwhile `using Loom.Results;` stays what a
+             consumer types all day. Precedent: AWSSDK.S3 ships the Amazon.S3 namespace. -->
+        <PackageId>CodeByDylan.$(MSBuildProjectName)</PackageId>
         <Authors>Dylan de Beer</Authors>
         <PackageProjectUrl>https://github.com/CodeByDylan/Loom</PackageProjectUrl>
         <RepositoryUrl>https://github.com/CodeByDylan/Loom</RepositoryUrl>
