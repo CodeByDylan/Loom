@@ -16,14 +16,13 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
         configurationBuilder.UseLoomIdentities(typeof(Widget).Assembly);
 
+    // Discovered rather than listed, so adding an aggregate means adding its configuration beside its
+    // slices and nothing here. A mapping written inline would grow this method with every entity and
+    // put it a long way from the code that uses it.
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         ArgumentNullException.ThrowIfNull(modelBuilder);
 
-        modelBuilder.Entity<Widget>(widget =>
-        {
-            widget.HasKey(entity => entity.Id);
-            widget.Property(entity => entity.Name).HasMaxLength(200).IsRequired();
-        });
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(AppDbContext).Assembly);
     }
 }
