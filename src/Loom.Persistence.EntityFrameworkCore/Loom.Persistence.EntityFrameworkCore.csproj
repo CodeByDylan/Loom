@@ -6,6 +6,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Loom.Entities\Loom.Entities.csproj" />
+        <ProjectReference Include="..\Loom.Handlers\Loom.Handlers.csproj" />
         <ProjectReference Include="..\Loom.Paging\Loom.Paging.csproj" />
         <ProjectReference Include="..\Loom.Specifications\Loom.Specifications.csproj" />
     </ItemGroup>
