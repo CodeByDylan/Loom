@@ -95,6 +95,23 @@ public sealed class OrderingApi : IAsyncDisposable
     /// <summary>A client with no token, for proving endpoints are closed by default.</summary>
     public HttpClient AnonymousClient() => _factory.CreateClient();
 
+    /// <summary>
+    /// A client authenticated as the given customer, against a host with extra registrations.
+    /// </summary>
+    /// <remarks>
+    /// Reuses the container and its connection string; only the service graph differs. For a test that
+    /// needs a collaborator to misbehave.
+    /// </remarks>
+    public HttpClient ClientFor(Id<Customer> customer, Action<IServiceCollection> configure)
+    {
+        WebApplicationFactory<Program> configured = _factory
+            .WithWebHostBuilder(builder => builder.ConfigureServices(configure));
+
+        HttpClient client = configured.CreateClient();
+        client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", TokenFor(customer));
+        return client;
+    }
+
     public async Task InDatabaseAsync(Func<OrderingDbContext, Task> work)
     {
         using IServiceScope scope = _factory.Services.CreateScope();

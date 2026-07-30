@@ -10,8 +10,10 @@ namespace Loom.Persistence;
 /// is only expressible as an exception — there is no way to tell the object-relational mapper to stop
 /// by returning a value. Nothing was committed.
 /// <para>
-/// A caller that reports outcomes as results should catch this and translate <see cref="Error" />
-/// back into a failure, rather than letting it escape as an unhandled exception.
+/// Callers should not need to catch this. Declaring
+/// <see cref="DomainEventFailureChainBuilderExtensions.WithDomainEventFailures" /> in the handler
+/// decorator chain turns it back into the failure the event handler reported, so the outcome reaches
+/// the caller as a result rather than as an exception. Catch it directly only outside that chain.
 /// </para>
 /// </remarks>
 public sealed class DomainEventDispatchException : Exception
