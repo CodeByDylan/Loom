@@ -121,6 +121,15 @@ public sealed class DomainEventInterceptor(
             }
         }
 
+        // The limit bounds dispatching passes, not events: a chain that settles on the very last pass
+        // has raised nothing further and is not a cycle. Only events still pending after the last pass
+        // say a handler is feeding itself. Inspected rather than drained, so a genuine cycle's events
+        // stay on their aggregates instead of being silently discarded on the way to the exception.
+        if (!HasPendingEvents(context))
+        {
+            return;
+        }
+
         throw new InvalidOperationException(
             $"Domain events were still being raised after {MaximumDrainPasses} passes. A handler is "
             + "raising an event that leads back to itself.");

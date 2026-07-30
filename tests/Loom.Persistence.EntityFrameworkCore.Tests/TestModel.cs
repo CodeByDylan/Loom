@@ -49,6 +49,8 @@ internal sealed class Order : AggregateRoot<Order>
 
     public void Touch() => Raise(new OrderTouched(Id));
 
+    public void Cascade(int remaining) => Raise(new OrderCascaded(Id, remaining));
+
     public void Ship() => Raise(new OrderShipped(Id));
 }
 
@@ -72,6 +74,9 @@ internal sealed class OrderLine : Entity<OrderLine>
 internal sealed record OrderCancelled(Id<Order> OrderId, int Total) : IDomainEvent;
 
 internal sealed record OrderTouched(Id<Order> OrderId) : IDomainEvent;
+
+/// <summary>A link in a chain of a known length, for approaching the drain limit from both sides.</summary>
+internal sealed record OrderCascaded(Id<Order> OrderId, int Remaining) : IDomainEvent;
 
 internal sealed record OrderShipped(Id<Order> OrderId) : IDeferredDomainEvent;
 
