@@ -21,6 +21,8 @@ internal class Order : AggregateRoot<Order>
     }
 
     public void Touch() => Raise(new OrderTouched(Id));
+
+    public void Ship() => Raise(new OrderShipped(Id));
 }
 
 internal sealed class OrderProxy(Id<Order> id) : Order(id);
@@ -39,3 +41,6 @@ internal sealed class Customer : Entity<Customer>
 internal sealed record OrderCancelled(Id<Order> OrderId) : IDomainEvent;
 
 internal sealed record OrderTouched(Id<Order> OrderId) : IDomainEvent;
+
+// Deferred: dispatched after the transaction commits, so its handlers may reach outside the process.
+internal sealed record OrderShipped(Id<Order> OrderId) : IDeferredDomainEvent;

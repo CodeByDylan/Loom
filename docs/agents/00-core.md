@@ -30,13 +30,13 @@ handler, and entry point together.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
-| Data | EF Core 10 + Npgsql | Postgres. No repositories. |
+| Data | EF Core + Npgsql, `Loom.Persistence.EntityFrameworkCore` | Postgres. No repositories. |
 | Queries | `Loom.Specifications`, `Loom.Paging` | Named rules applied to a query the slice owns. |
 | Validation | FluentValidation | Request shape only, never domain rules. |
 | Dispatch | `Loom.Handlers` | No mediator. Handlers + one global decorator chain. |
 | Mapping | Manual | Mapperly only for large mechanical maps. |
 | Logging | `ILogger` + OpenTelemetry | No Serilog. |
-| Orchestration | Aspire 13 | Dev-time. Not in the request path. |
+| Orchestration | Aspire | Dev-time. Not in the request path. |
 | Tests | TUnit, Testcontainers, Respawn | Plus NetArchTest for structure. |
 
 Deliberately absent: MediatR and AutoMapper (both now require paid licences), Wolverine and
@@ -83,21 +83,18 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 - **Combine predicates with `Criteria.And`/`Or`/`Not`, not whole specifications.** Two specifications with conflicting ordering have no sensible combination.
 - **No persistence attributes on entities.** Mapping is configured host-side via `IEntityTypeConfiguration<T>`.
 - **`Domain` has no async I/O.** No `Task`-returning methods that reach outside memory.
-- **Entities derive from `Entity<TSelf>`; aggregate roots from `AggregateRoot<TSelf>`.** Identity is `Id<TSelf>`, assigned at construction, never default. Materialization must go through the `Id<TSelf>` constructor — the parameterless one mints a fresh identity and would detach the object from its stored row.
+- **Entities derive from `Entity<TSelf>`; aggregate roots from `AggregateRoot<TSelf>`.** Identity is `Id<TSelf>`, assigned at construction, never default.
+- **Give every entity a private parameterless constructor for EF to materialise through.** EF writes the identity from the column, so the one minted in that constructor is discarded and the object stays attached to its row. Reconstructing through an `Id<TSelf>` constructor instead makes EF unable to choose between it and any other one-parameter constructor, and the model fails to build.
 - **Entities are classes. Value objects and domain events are `sealed record`s.** Entities compare by identity, so structural equality is wrong for them; everything else in the domain is value-like and records are right.
 - **Only aggregate roots get a `DbSet<>`.** Child entities are reached through their root.
 - **`Id<TEntity>` ordering is not creation order.** Version 7 GUIDs are only millisecond-granular and are not monotonic within a millisecond. Never paginate on an id, and never use one to decide what happened first — sort on an explicit timestamp column.
-- **Domain events are collected but not yet dispatched.** `Raise` records them; `DequeueDomainEvents` drains them. Until the Loom EF Core package exists, drain them yourself in a `SaveChanges` interceptor.
+- **Ordinary domain events dispatch before the commit; deferred ones after.** An ordinary handler may change data atomically with the operation but must not reach outside the process, because a rollback cannot unsend an email. A `IDeferredDomainEvent` handler may reach outside the process and **must be idempotent**, since delivery is at least once. Which one applies is declared on the event.
 
-Every `Id<TEntity>` needs one EF Core value converter. Register it once, generically:
+Register identity conversion once per assembly, from `ConfigureConventions` — not `OnModelCreating`, where discovery has already skipped identities that are not keys:
 
 ```csharp
-// Applied in AppDbContext.ConfigureConventions
-configurationBuilder.Properties<Id<Order>>()
-    .HaveConversion<IdConverter<Order>>();
-
-internal sealed class IdConverter<TEntity>()
-    : ValueConverter<Id<TEntity>, Guid>(id => id.Value, value => Id<TEntity>.From(value));
+protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder) =>
+    configurationBuilder.UseLoomIdentities(typeof(Order).Assembly);
 ```
 
 ## 6. Persistence
@@ -107,8 +104,8 @@ internal sealed class IdConverter<TEntity>()
 - **Reads project in the query:** `AsNoTracking()` then `.Select(...)` straight into the slice's response type. Never materialise an entity in order to map it — that is the most common performance defect in EF codebases.
 - **Migrations are generated with `dotnet ef`, reviewed by a human, and applied deliberately.** Never `EnsureCreated()`, never auto-migrate on startup in a deployed environment.
 - Dapper is permitted for a specific query that demands it, as a documented exception. It is not a second default.
-- **Apply specifications to the query the slice owns.** `db.Orders.Apply(new OverdueOrders(id))` — never hand a specification to something that queries on your behalf. Reintroducing a repository is the one way this design fails.
-- **Paging is the caller's decision, applied after the specification:** `.Apply(spec).ApplyPaging(request)`, then count and fetch. Return `Page<T>` so every endpoint reports paging identically.
+- **Apply specifications to the query the slice owns.** `db.Orders.ApplySpecification(new OverdueOrders(id))` — never hand a specification to something that queries on your behalf. Reintroducing a repository is the one way this design fails. The name differs from the specification package's own `Apply` deliberately; that one cannot honour eager loading and refuses rather than silently dropping it.
+- **Paging is the caller's decision, applied after the specification:** `.ApplySpecification(spec).ToPageAsync(request, ct)`. Return `Page<T>` so every endpoint reports paging identically.
 - **`PageRequest` validates itself, including a maximum size.** Never accept a raw page size from a query string without it — `?size=1000000` returns the table.
 
 ## 7. Validation and errors
