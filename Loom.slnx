@@ -13,6 +13,7 @@
   </Folder>
   <Folder Name="/- Solution Items/ci/">
     <File Path=".github/workflows/ci.yml" />
+    <File Path=".github/workflows/release.yml" />
   </Folder>
   <Folder Name="/- Solution Items/docs/">
     <File Path="docs/ROADMAP.md" />
@@ -25,6 +26,7 @@
   </Folder>
   <Folder Name="/- Solution Items/scripts/">
     <File Path="scripts/check-docs.sh" />
+    <File Path="scripts/check-release-version.sh" />
     <File Path="scripts/new-agents-md.sh" />
   </Folder>
   <Folder Name="/Entities/" />
