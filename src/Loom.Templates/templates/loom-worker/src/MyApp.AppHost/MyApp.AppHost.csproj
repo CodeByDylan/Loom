@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- Aspire ships as packages rather than a workload, and the host needs its own SDK to generate
+         the strongly-typed project references used in AppHost.cs. The version is inline because an
+         SDK reference cannot be managed centrally. -->
+    <Sdk Name="Aspire.AppHost.Sdk" Version="13.4.6" />
+
+    <PropertyGroup>
+        <OutputType>Exe</OutputType>
+        <UserSecretsId>myapp-apphost</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Aspire.Hosting.AppHost" />
+        <PackageReference Include="Aspire.Hosting.PostgreSQL" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\MyApp.Worker\MyApp.Worker.csproj" />
+    </ItemGroup>
+
+</Project>
