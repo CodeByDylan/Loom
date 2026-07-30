@@ -34,6 +34,10 @@
     <Project Path="tests/Loom.Results.Tests/Loom.Results.Tests.csproj" />
   </Folder>
   <Folder Name="/Specifications/" />
-  <Folder Name="/Specifications/src/" />
-  <Folder Name="/Specifications/tests/" />
+  <Folder Name="/Specifications/src/">
+    <Project Path="src/Loom.Specifications/Loom.Specifications.csproj" />
+  </Folder>
+  <Folder Name="/Specifications/tests/">
+    <Project Path="tests/Loom.Specifications.Tests/Loom.Specifications.Tests.csproj" />
+  </Folder>
 </Solution>
