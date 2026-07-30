@@ -12,6 +12,7 @@ namespace Loom.Persistence;
 /// contexts, the second registration would simply win, and the first context's configuration would
 /// silently be ignored. Tying the settings to the context keeps them apart without keyed lookups.
 /// </remarks>
+/// <param name="options">The configuration this context's outbox was given.</param>
 public sealed class OutboxSettings<TContext>(OutboxOptions options)
     where TContext : DbContext
 {

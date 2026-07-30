@@ -17,10 +17,12 @@ namespace Loom.Persistence;
 /// </para>
 /// <para>
 /// Every change here takes effect at once — there is no <c>SaveChanges</c> to follow, and none of it
-/// passes through the change tracker or the domain event interceptor. That is what makes these safe to
-/// run against a live outbox, and it also means they are not part of any surrounding transaction.
+/// passes through the change tracker or the domain event interceptor, which is what makes these safe to
+/// run against a live outbox. They do, however, run on the context's own connection, so a transaction
+/// already open on that context covers them like any other statement.
 /// </para>
 /// </remarks>
+/// <param name="context">The context whose outbox is being read or repaired.</param>
 public sealed class OutboxAdministration<TContext>(TContext context)
     where TContext : DbContext
 {
@@ -66,8 +68,14 @@ public sealed class OutboxAdministration<TContext>(TContext context)
     /// <param name="cancellationToken">Cancels the operation.</param>
     /// <returns><see langword="true" /> if a message was retried; <see langword="false" /> if none was abandoned under that identifier.</returns>
     /// <remarks>
-    /// The attempt count is reset, or the next failure would abandon it immediately. The last error is
-    /// kept: it is the evidence of what went wrong, and a retry does not make that untrue.
+    /// The attempt count is reset, or the next failure would abandon it immediately.
+    /// <para>
+    /// The last error is deliberately kept. Clearing it here would mean a retry that then succeeds
+    /// leaves no record the message ever failed — the row would look as though it delivered first time.
+    /// Delivery clears the error itself once it succeeds, so the only window in which a stale error is
+    /// visible is between this call and the next attempt, where a zero attempt count already says the
+    /// message is owed rather than failing.
+    /// </para>
     /// </remarks>
     public async Task<bool> RetryAsync(Guid id, CancellationToken cancellationToken = default)
     {
