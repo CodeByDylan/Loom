@@ -18,8 +18,9 @@ public static class PagingQueryableExtensions
     /// <returns>The requested page, with the total count.</returns>
     /// <exception cref="ArgumentNullException">Either argument is <see langword="null" />.</exception>
     /// <remarks>
-    /// Two round trips: one to count, one to fetch. The count is skipped when the requested page
-    /// starts beyond the end of a short result set, since the count is already known by then.
+    /// Two round trips: one to count, one to fetch. The count always runs, since a page carries the
+    /// total. The fetch is skipped when the requested page starts at or beyond that total, because
+    /// the answer is then known to be empty without asking the database for it.
     /// </remarks>
     public static async Task<Page<T>> ToPageAsync<T>(
         this IQueryable<T> source,
