@@ -47,6 +47,8 @@ internal sealed class Order : AggregateRoot<Order>
         Raise(new OrderCancelled(Id, Total));
     }
 
+    public void Touch() => Raise(new OrderTouched(Id));
+
     public void Ship() => Raise(new OrderShipped(Id));
 }
 
@@ -68,6 +70,8 @@ internal sealed class OrderLine : Entity<OrderLine>
 }
 
 internal sealed record OrderCancelled(Id<Order> OrderId, int Total) : IDomainEvent;
+
+internal sealed record OrderTouched(Id<Order> OrderId) : IDomainEvent;
 
 internal sealed record OrderShipped(Id<Order> OrderId) : IDeferredDomainEvent;
 
