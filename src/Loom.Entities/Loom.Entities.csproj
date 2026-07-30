@@ -1,7 +1,11 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Description>Base types for domain entities: strongly-typed identity, equality by identity, aggregate roots, and domain event collection. Depends on nothing.</Description>
+        <Description>Base types for domain entities: strongly-typed identity, equality by identity, aggregate roots, and domain event collection.</Description>
     </PropertyGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Loom.Results\Loom.Results.csproj" />
+    </ItemGroup>
 
 </Project>
