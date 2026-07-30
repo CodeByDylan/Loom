@@ -9,10 +9,20 @@ outgrown this file.
 | Package | Tier | Why |
 | --- | --- | --- |
 | `Loom.Outbox.Diagnostics` | 3 | Somewhere to see abandoned outbox messages and retry them deliberately. Today an abandoned message sits in the table as evidence, which is correct but not operable. Only worth building once something has actually been abandoned in anger. |
-| `Loom.Handlers.Logging` | 2 | A logging decorator. Deferred deliberately: what gets logged, at what level, with what structured fields, and whether the request body is included (it may hold secrets) are all decisions better made against a real project. |
 | `Loom.Templates` | n/a | `dotnet new` templates that scaffold a solution and assemble its `AGENTS.md` from `docs/agents/`. Replaces `scripts/new-agents-md.sh`. |
 
 ## Built
+
+`Loom.Handlers.Logging` shipped as `chain.WithLogging()` **inside `Loom.Handlers`**, not as a package.
+It would have needed `IHandlerChainBuilder` from a package in its own tier, which references may not
+reach sideways — so a separate package would have had to sit at Tier 3 purely to reference Tier 2, a
+workaround rather than a description. Nothing forced the split: unlike FluentValidation, logging
+abstractions carry no third-party coupling worth declaring in an identifier.
+
+The decisions this entry deferred, now made against a real project: the level follows the failure's
+category, so a refusal is information and only an unavailable dependency is a warning; a success is
+debug, because one line per operation is noise at volume; and the request's contents are never
+recorded, with no option to change that.
 
 `Loom.Results.Analyzers` shipped, as a warning rather than the build error planned here. Anyone
 following the guidance builds with warnings as errors, so it fails their build regardless, while a
