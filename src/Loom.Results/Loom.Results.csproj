@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Result and error abstractions for the Loom package family. Depends on nothing.</Description>
+    </PropertyGroup>
+
+</Project>
