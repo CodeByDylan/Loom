@@ -24,10 +24,12 @@
   <Folder Name="/Handlers/src/">
     <Project Path="src/Loom.Handlers.Abstractions/Loom.Handlers.Abstractions.csproj" />
     <Project Path="src/Loom.Handlers/Loom.Handlers.csproj" />
+    <Project Path="src/Loom.Handlers.FluentValidation/Loom.Handlers.FluentValidation.csproj" />
   </Folder>
   <Folder Name="/Handlers/tests/">
     <Project Path="tests/Loom.Handlers.Abstractions.Tests/Loom.Handlers.Abstractions.Tests.csproj" />
     <Project Path="tests/Loom.Handlers.Tests/Loom.Handlers.Tests.csproj" />
+    <Project Path="tests/Loom.Handlers.FluentValidation.Tests/Loom.Handlers.FluentValidation.Tests.csproj" />
   </Folder>
   <Folder Name="/Paging/" />
   <Folder Name="/Paging/src/">
