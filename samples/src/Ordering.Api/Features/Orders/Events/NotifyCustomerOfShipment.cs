@@ -1,6 +1,7 @@
 using Loom.Entities;
 using Loom.Results;
 using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using Ordering.Api.Infrastructure;
 using Ordering.Domain.Orders;
 
@@ -29,33 +30,40 @@ internal sealed class NotifyCustomerOfShipment(OrderingDbContext database)
             return Result.Success;
         }
 
-        database.ShipmentNotifications.Add(new ShipmentNotification
+        ShipmentNotification notification = new()
         {
             OrderId = domainEvent.OrderId,
             CustomerId = domainEvent.CustomerId,
-        });
+        };
+
+        database.ShipmentNotifications.Add(notification);
 
         try
         {
             // Saved here, because the transaction that raised this event committed long ago.
             await database.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException)
+        catch (DbUpdateException exception) when (IsAnotherNotificationForSameOrder(exception))
         {
-            // Either the constraint rejected a duplicate — in which case the work is already done and
-            // this delivery has nothing to be sorry about — or something else went wrong and should be
-            // reported. Asking the database which it was avoids guessing at provider error codes.
-            database.ChangeTracker.Clear();
-
-            bool nowNotified = await database.ShipmentNotifications
-                .AnyAsync(notification => notification.OrderId == domainEvent.OrderId, cancellationToken);
-
-            if (!nowNotified)
-            {
-                throw;
-            }
+            // Another delivery got there first, so the work is done. Only this one violation is
+            // success; any other failure propagates and the delivery is retried.
+            //
+            // The failed insert is detached — not the whole change tracker. The delivery pass shares
+            // this scoped context, and clearing it would also detach the outbox bookkeeping, so the
+            // message would never be marked delivered and would be redelivered on every interval.
+            database.Entry(notification).State = EntityState.Detached;
         }
 
         return Result.Success;
     }
+
+    // Matched by SQLSTATE and constraint name rather than by exception type alone, so an unrelated
+    // persistence failure — or even a different unique violation, such as the primary key's — is
+    // never mistaken for idempotent success. The name is pinned by a test against the real schema.
+    private static bool IsAnotherNotificationForSameOrder(DbUpdateException exception) =>
+        exception.InnerException is PostgresException
+        {
+            SqlState: PostgresErrorCodes.UniqueViolation,
+            ConstraintName: "IX_ShipmentNotifications_OrderId",
+        };
 }

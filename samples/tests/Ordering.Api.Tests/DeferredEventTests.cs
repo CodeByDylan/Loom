@@ -98,6 +98,38 @@ public sealed class DeferredEventTests
     }
 
     [Test]
+    public async Task A_Duplicate_Notification_Fails_With_Exactly_What_The_Handler_Treats_As_Done()
+    {
+        // The handler recognises a lost race by SQLSTATE and constraint name. This pins both against
+        // the real schema: rename the index and this fails, instead of the handler silently starting
+        // to rethrow on races it should absorb.
+        Id<Customer> customer = await _api.AddCustomerAsync();
+        Guid orderId = await ShipAsync(customer);
+        await DeliverAsync();
+
+        await _api.InDatabaseAsync(async database =>
+        {
+            database.ShipmentNotifications.Add(new Infrastructure.ShipmentNotification
+            {
+                OrderId = Loom.Entities.Id<Domain.Orders.Order>.From(orderId),
+                CustomerId = customer,
+            });
+
+            try
+            {
+                await database.SaveChangesAsync();
+                Assert.Fail("The unique index should have rejected the duplicate.");
+            }
+            catch (DbUpdateException exception)
+            {
+                Npgsql.PostgresException postgres = (Npgsql.PostgresException)exception.InnerException!;
+                await Assert.That(postgres.SqlState).IsEqualTo(Npgsql.PostgresErrorCodes.UniqueViolation);
+                await Assert.That(postgres.ConstraintName).IsEqualTo("IX_ShipmentNotifications_OrderId");
+            }
+        });
+    }
+
+    [Test]
     public async Task An_Ordinary_Event_Does_Not_Go_Through_The_Outbox()
     {
         Id<Customer> customer = await _api.AddCustomerAsync();
