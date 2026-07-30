@@ -1,0 +1,6 @@
+<Project>
+    <ItemGroup>
+        <PackageVersion Include="MinVer" Version="7.0.0" />
+        <PackageVersion Include="TUnit" Version="1.62.0" />
+    </ItemGroup>
+</Project>

@@ -1,0 +1,49 @@
+<Project>
+
+    <!-- Applies to every project. Individual .csproj files must not redeclare these. -->
+    <PropertyGroup>
+        <ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+        <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <LangVersion>latest</LangVersion>
+        <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    </PropertyGroup>
+
+    <!-- Identifies src/ projects (shipped packages) vs tests/ projects. -->
+    <PropertyGroup>
+        <IsTestProject Condition="$(MSBuildProjectName.EndsWith('.Tests'))">true</IsTestProject>
+        <IsTestProject Condition="'$(IsTestProject)' == ''">false</IsTestProject>
+    </PropertyGroup>
+
+    <!-- Shipped packages: documented, packable, versioned from git tags. -->
+    <PropertyGroup Condition="'$(IsTestProject)' == 'false'">
+        <GenerateDocumentationFile>true</GenerateDocumentationFile>
+        <IsPackable>true</IsPackable>
+        <Authors>Dylan de Beer</Authors>
+        <PackageProjectUrl>https://github.com/CodeByDylan/Loom</PackageProjectUrl>
+        <RepositoryUrl>https://github.com/CodeByDylan/Loom</RepositoryUrl>
+        <RepositoryType>git</RepositoryType>
+        <PackageReadmeFile>README.md</PackageReadmeFile>
+        <PackageLicenseExpression>MIT</PackageLicenseExpression>
+        <IncludeSymbols>true</IncludeSymbols>
+        <SymbolPackageFormat>snupkg</SymbolPackageFormat>
+        <PublishRepositoryUrl>true</PublishRepositoryUrl>
+        <EmbedUntrackedSources>true</EmbedUntrackedSources>
+        <!-- Every package ships in lockstep from one repo-wide tag, e.g. "v0.3.0". -->
+        <MinVerTagPrefix>v</MinVerTagPrefix>
+    </PropertyGroup>
+
+    <ItemGroup Condition="'$(IsTestProject)' == 'false'">
+        <PackageReference Include="MinVer" PrivateAssets="all" />
+        <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />
+    </ItemGroup>
+
+    <!-- Test projects: never packaged, never require XML docs. -->
+    <PropertyGroup Condition="'$(IsTestProject)' == 'true'">
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+</Project>
