@@ -18,7 +18,7 @@ Packages that exist today:
 | `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` and `IHandler<TRequest>`, as pure types, so a consumer's domain project can declare handlers. | Anything touching a container. |
 | `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. Carries the logging decorator, whose level follows the failure's category. | A dispatcher. See §5. Any way to log a request's contents. |
 | `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
-| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. |
+| `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox with administration over it, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. Any endpoint, command or dashboard over the outbox. |
 
 Every package listed has code. There are no placeholder projects left.
 

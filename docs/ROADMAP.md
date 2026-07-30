@@ -8,10 +8,29 @@ outgrown this file.
 
 | Package | Tier | Why |
 | --- | --- | --- |
-| `Loom.Outbox.Diagnostics` | 3 | Somewhere to see abandoned outbox messages and retry them deliberately. Today an abandoned message sits in the table as evidence, which is correct but not operable. Only worth building once something has actually been abandoned in anger. |
 | `Loom.Templates` | n/a | `dotnet new` templates that scaffold a solution and assemble its `AGENTS.md` from `docs/agents/`. Replaces `scripts/new-agents-md.sh`. |
 
 ## Built
+
+`Loom.Outbox.Diagnostics` shipped as `OutboxAdministration<TContext>` **inside
+`Loom.Persistence.EntityFrameworkCore`**, for the same reason as the logging decorator: it needs the
+outbox types and the mapper from a package in its own tier, and references may not reach sideways.
+
+Its condition — "only worth building once something has actually been abandoned in anger" — has not
+been met, so only the part that does not depend on operating experience was built. Finding what was
+abandoned, retrying it and clearing what was delivered all follow from the table's own columns. How an
+operator *reaches* those does not, so there is no endpoint, command, dashboard or metric, and this
+entry survives for whichever of those turns out to be wanted.
+
+Building it turned up something more pressing than retrying. **Nothing ever deleted a delivered
+message**, so the table grew without bound in every deployment — guaranteed, unlike abandonment, which
+needs a bug. Purging delivered messages is therefore part of the same work, and refuses to touch an
+abandoned one at any age, since deleting the record of a failure is how a failure stays unexplained.
+
+| Still wanted | |
+| --- | --- |
+| A surface | Whichever of an endpoint, a command, a dashboard or a metric an operator actually reaches for. |
+| A retention schedule | Purging exists; nothing calls it on a timer. Deciding the interval needs a deployment. |
 
 `Loom.Handlers.Logging` shipped as `chain.WithLogging()` **inside `Loom.Handlers`**, not as a package.
 It would have needed `IHandlerChainBuilder` from a package in its own tier, which references may not
