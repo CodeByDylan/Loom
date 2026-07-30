@@ -76,6 +76,10 @@
   <Folder Name="/Specifications/src/">
     <Project Path="src/Loom.Specifications/Loom.Specifications.csproj" />
   </Folder>
+  <Folder Name="/Templates/" />
+  <Folder Name="/Templates/src/">
+    <Project Path="src/Loom.Templates/Loom.Templates.csproj" />
+  </Folder>
   <Folder Name="/Specifications/tests/">
     <Project Path="tests/Loom.Specifications.Tests/Loom.Specifications.Tests.csproj" />
   </Folder>

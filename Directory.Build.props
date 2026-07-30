@@ -19,6 +19,8 @@
              project's own properties, so a flag set there would be read here as unset. -->
         <IsAnalyzerProject Condition="$(MSBuildProjectName.EndsWith('.Analyzers'))">true</IsAnalyzerProject>
         <IsAnalyzerProject Condition="'$(IsAnalyzerProject)' == ''">false</IsAnalyzerProject>
+        <IsTemplateProject Condition="$(MSBuildProjectName.EndsWith('.Templates'))">true</IsTemplateProject>
+        <IsTemplateProject Condition="'$(IsTemplateProject)' == ''">false</IsTemplateProject>
     </PropertyGroup>
 
     <!-- Shipped packages: documented, packable, versioned from git tags. -->
@@ -66,6 +68,31 @@
         <IsPackable>false</IsPackable>
         <GenerateDocumentationFile>false</GenerateDocumentationFile>
         <EnforceExtendedAnalyzerRules>true</EnforceExtendedAnalyzerRules>
+    </PropertyGroup>
+
+    <!-- Template projects. Declared last so it wins over the shipped-package settings above. A
+         template package carries no assembly at all: the framework is required by the SDK but its
+         output is thrown away, and the payload is the content folder. Compilation is switched off
+         entirely, because the template's own .cs and .csproj files are content to be copied, not code
+         to be built — left on, MSBuild would try to compile a scaffolded project into this one. -->
+    <PropertyGroup Condition="'$(IsTemplateProject)' == 'true'">
+        <TargetFramework>netstandard2.0</TargetFramework>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+        <PackageType>Template</PackageType>
+        <IncludeContentInPack>true</IncludeContentInPack>
+        <IncludeBuildOutput>false</IncludeBuildOutput>
+        <!-- There is no assembly to symbolise, and a symbol package with nothing in it fails NU5017. -->
+        <IncludeSymbols>false</IncludeSymbols>
+        <ContentTargetFolders>content</ContentTargetFolders>
+        <SuppressDependenciesWhenPacking>true</SuppressDependenciesWhenPacking>
+        <EnableDefaultItems>false</EnableDefaultItems>
+        <!-- Load-bearing. NuGet excludes anything beginning with a dot by default, which for a
+             template package means silently dropping .template.config/template.json — the one file
+             that makes it a template at all — along with the .editorconfig and .gitignore a scaffolded
+             solution is supposed to start with. -->
+        <NoDefaultExcludes>true</NoDefaultExcludes>
+        <!-- NU5128 is "no lib/ folder for the declared framework", which is exactly right here. -->
+        <NoWarn>$(NoWarn);NU5128</NoWarn>
     </PropertyGroup>
 
 </Project>

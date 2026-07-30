@@ -1,0 +1,54 @@
+using FluentValidation;
+using Loom.Handlers;
+using Loom.Persistence;
+using Microsoft.EntityFrameworkCore;
+using MyApp.Api.Infrastructure;
+
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+// Telemetry, health, resilience and service discovery, from the scaffolded defaults project.
+builder.AddServiceDefaults();
+
+// Read once and refused here, so the failure lands at startup rather than on the first request.
+// The AppHost supplies this in development.
+string connectionString = builder.Configuration.GetConnectionString("database")
+    ?? throw new InvalidOperationException(
+        "No 'database' connection string was configured. The AppHost provides one when running locally; "
+        + "a deployment supplies it through configuration.");
+
+builder.Services.AddDbContext<AppDbContext>((serviceProvider, options) => options
+    .UseNpgsql(connectionString)
+    .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
+
+builder.Services.AddLoomPersistence();
+
+// The chain is declared once and applies to every handler, so a slice cannot be registered without
+// validation by forgetting a call. Declaration order is nesting order: logging outermost, so nothing
+// goes unrecorded — including a request refused by validation, which is the outcome most worth seeing.
+builder.Services
+    .AddLoomHandlers(chain => chain
+        .WithLogging()
+        .WithValidation())
+    .AddHandler<MyApp.Api.Features.Widgets.CreateWidget.Handler,
+        MyApp.Api.Features.Widgets.CreateWidget.Request,
+        MyApp.Api.Features.Widgets.CreateWidget.Response>()
+    .AddHandler<MyApp.Api.Features.Widgets.GetWidget.Handler,
+        MyApp.Api.Features.Widgets.GetWidget.Request,
+        MyApp.Api.Features.Widgets.GetWidget.Response>();
+
+// includeInternalTypes matters: slice validators are internal, and without it none are registered.
+// The validating decorator treats a missing validator as nothing to validate, so the omission would
+// be silent — which is why ValidatorRegistrationTests asserts every validator is resolvable.
+builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped, includeInternalTypes: true);
+
+builder.Services.AddProblemDetails();
+
+WebApplication app = builder.Build();
+
+app.MapDefaultEndpoints();
+app.MapEndpoints(typeof(Program).Assembly);
+
+await app.RunAsync();
+
+// Exposed so the test host can reference this assembly through WebApplicationFactory<Program>.
+public partial class Program;
