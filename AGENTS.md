@@ -127,7 +127,8 @@ of letting a tier become a web of mutual references.
 - Tagging and pushing are human actions (§2.7). `release.yml` is what makes that mechanical rather than customary: it runs only for a tag someone pushed, and its publish step waits on the `nuget` environment, whose required reviewers are configured in repository settings. An agent prepares a release; a person causes one.
 - **A release verifies before it packs, and checks the version before it pushes.** `scripts/check-release-version.sh` compares every produced package against the tag. MinVer is configured, not magical: a wrong prefix or a shallow clone yields `0.0.0-alpha.0.N` while everything else looks healthy, and a published version can never be replaced — so the wrong number would be burned for good.
 - **`v0.1.0` releases `0.1.0`.** The prefix in the tag is stripped, matching `MinVerTagPrefix`. A tag without it is refused rather than guessed at.
-- Publishing needs a `NUGET_API_KEY` secret on the repository. `workflow_dispatch` runs the whole thing without publishing, which is how to check a release before making one.
+- **Publishing uses trusted publishing, so no publishing credential is stored here.** nuget.org trusts `release.yml` by name and issues a key valid for an hour, meaning there is nothing to steal between releases and nothing to rotate. The trust policy names this workflow file and the `nuget` environment, so renaming either stops publishing working — change both together. The one secret is `NUGET_USER`, a nuget.org profile name rather than a credential.
+- `workflow_dispatch` runs the whole thing without publishing, which is how to check a release before making one. It still signs in, so a dry run fails if the trust policy has stopped matching.
 
 ## 9. Consuming Loom
 

@@ -3,6 +3,10 @@ name: Release
 # Publishing is a human action, and this is where that is enforced rather than merely stated:
 # nothing here runs without a tag someone pushed, and the push step waits on an environment whose
 # protection rules live in repository settings.
+#
+# There is no publishing credential in this repository. nuget.org trusts this workflow by name, and
+# issues a key that lasts an hour, so the thing an attacker would want to steal does not exist between
+# releases. The trust policy on nuget.org names this file — renaming it stops publishing working.
 on:
   push:
     tags: ['v*']
@@ -18,8 +22,15 @@ jobs:
     runs-on: ubuntu-latest
 
     # Configure required reviewers on this environment in repository settings. Without them the tag
-    # alone releases; with them a person confirms it.
+    # alone releases; with them a person confirms it. Name it on the trust policy too, so a workflow
+    # run that skipped this environment cannot obtain a key at all.
     environment: nuget
+
+    permissions:
+      contents: read
+      # Lets this job ask GitHub for the signed token nuget.org exchanges for a key. Nothing else
+      # here needs a permission, and nothing writes to the repository.
+      id-token: write
 
     steps:
       - uses: actions/checkout@v4
@@ -59,10 +70,26 @@ jobs:
           path: artifacts/*
           if-no-files-found: error
 
+      # Deliberately not gated on the tag: a dry run should fail here if the trust policy has stopped
+      # matching, since that is otherwise discoverable only during a real release, at the worst moment.
+      # The key it mints is unused in that case and expires within the hour.
+      #
+      # Requested this late on purpose. The key lasts an hour and one token buys exactly one key, so
+      # asking before the tests and the version check would spend it on a release that may not happen.
+      - name: Sign in to nuget.org
+        id: nuget-login
+        uses: NuGet/login@v1
+        with:
+          # A nuget.org profile name, not an email address, and not a credential — the trust policy is
+          # what authorises this. Held as a secret only to keep the account name out of logs.
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish
         if: github.ref_type == 'tag' && inputs.dryRun != true
         env:
-          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+          # Through the environment rather than the command line, so it cannot be read from a rendered
+          # command in the log.
+          NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
         # Symbol packages are pushed alongside their own package, so only the packages are named
         # here. Skipping duplicates makes re-running a partly failed release safe.
         run: >
