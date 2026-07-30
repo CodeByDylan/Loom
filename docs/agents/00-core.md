@@ -1,0 +1,182 @@
+<!--LOOM-TEMPLATE Shared core fragment. Assembled by scripts/new-agents-md.sh. Does not govern the Loom repo itself. -->
+# AGENTS.md
+
+Rules for working on this project. Assembled from Loom's `docs/agents/` templates — this file
+is yours now. Edit it freely.
+
+> **FILL IN:** One sentence on what this service does, and which archetypes it contains.
+
+## 1. Orientation
+
+```
+src/MyApp.Domain/            pure domain; Loom packages + BCL only
+src/MyApp.<Archetype>/       host; every slice lives here
+src/MyApp.AppHost/           Aspire orchestration; dev-time only, ships nothing
+src/MyApp.ServiceDefaults/   Aspire wiring; your code, edit it
+tests/MyApp.Domain.Tests/
+tests/MyApp.<Archetype>.Tests/
+tests/MyApp.ArchitectureTests/
+```
+
+This is Clean Architecture reduced to its one boundary worth enforcing at compile time —
+`Domain` purity — with vertical slices for everything else. The `Application`/`Infrastructure`
+split is deliberately absent: it shreds a slice across two projects and cancels the point of
+slicing.
+
+A **slice** is one operation. One file, one namespace, holding its request, response, validator,
+handler, and entry point together.
+
+**The stack.** Versions live in `Directory.Packages.props`, never here and never in a `.csproj`.
+
+| Concern | Choice | Notes |
+| --- | --- | --- |
+| Data | EF Core 10 + Npgsql | Postgres. No repositories. |
+| Queries | `Loom.Specifications`, `Loom.Paging` | Named rules applied to a query the slice owns. |
+| Validation | FluentValidation | Request shape only, never domain rules. |
+| Dispatch | `Loom.Handlers` | No mediator. Handlers + one global decorator chain. |
+| Mapping | Manual | Mapperly only for large mechanical maps. |
+| Logging | `ILogger` + OpenTelemetry | No Serilog. |
+| Orchestration | Aspire 13 | Dev-time. Not in the request path. |
+| Tests | TUnit, Testcontainers, Respawn | Plus NetArchTest for structure. |
+
+Deliberately absent: MediatR and AutoMapper (both now require paid licences), Wolverine and
+FastEndpoints (frameworks that would own request handling), Hangfire (LGPL, and Aspire covers
+the observability its dashboard compensated for).
+
+## 2. Hard constraints
+
+1. **`Domain` references only Loom packages and the BCL.** No EF Core, no ASP.NET, no FluentValidation, no DI container.
+2. **Never throw for expected failures.** Return a `Loom.Results` value.
+3. **No slice references another slice.** Shared code within an aggregate goes in `_Shared.cs`. Anything two aggregates want belongs in `Domain`.
+4. **Entities never cross the transport boundary.** Requests and responses are slice-owned types.
+5. **`UNDECIDED` and `FILL IN` mean stop and ask.** Do not resolve them yourself and do not silently pick a convention.
+6. **Run the §3 verify block before claiming done.** CI runs the same block; a green claim over a red build is a lie.
+7. **Never edit this file to resolve a conflict between a rule and your code.** If a rule blocks you, say so.
+
+## 3. Build and verify
+
+```bash
+dotnet format                       # fixes formatting in place
+dotnet build                        # warnings are errors
+dotnet test                         # TUnit
+dotnet format --verify-no-changes   # confirms nothing is left unformatted
+```
+
+- Run `dotnet format` (fixing), not verify-only. Never hand-edit whitespace to satisfy the check.
+- Revert formatting-only changes to files your work didn't otherwise touch.
+- `.editorconfig` is the authority on code style. To change how code looks, edit it there. Do not add style rules to this file.
+
+## 4. Architecture
+
+- **One file per operation:** `Features/<Aggregate>/<Operation>.cs`.
+- **One namespace per slice:** `namespace MyApp.Features.Orders.CreateOrder;`. This is what makes slice isolation mechanically enforceable (§11) rather than a review convention.
+- **A slice over ~250 lines means the operation is doing too much.** Split the operation, not the file. A genuine helper gets a sibling file in the same folder, never a new folder.
+- **`Features/<Aggregate>/_Shared.cs`** is the only permitted cross-slice sharing, and only within one aggregate.
+- **Entry points are thin adapters.** An endpoint, a `BackgroundService`, or a CLI command validates nothing, decides nothing, and queries nothing — it adapts input and dispatches to a handler.
+- **Request and response types are private to their slice.** If two slices want the same shape, they get two identical types. This looks wasteful and is the rule that keeps slices independent; a shared response DTO is how one slice's requirements start dictating another's.
+
+## 5. Domain
+
+- **Invariants live in `Domain` and return `Loom.Results`.** Not in validators, not in handlers, and never signalled by an exception.
+- **Specifications live in `Domain` and derive from `Specification<T>`.** A specification is a *named business rule* — `OverdueOrders(customerId)` — configured entirely in its constructor. It may carry a predicate, eager-loading, and ordering; never paging.
+- **Never give a specification a flag that toggles part of its query.** That is two rules sharing a name. Write two specifications.
+- **Combine predicates with `Criteria.And`/`Or`/`Not`, not whole specifications.** Two specifications with conflicting ordering have no sensible combination.
+- **No persistence attributes on entities.** Mapping is configured host-side via `IEntityTypeConfiguration<T>`.
+- **`Domain` has no async I/O.** No `Task`-returning methods that reach outside memory.
+- **Entities derive from `Entity<TSelf>`; aggregate roots from `AggregateRoot<TSelf>`.** Identity is `Id<TSelf>`, assigned at construction, never default. Materialization must go through the `Id<TSelf>` constructor — the parameterless one mints a fresh identity and would detach the object from its stored row.
+- **Entities are classes. Value objects and domain events are `sealed record`s.** Entities compare by identity, so structural equality is wrong for them; everything else in the domain is value-like and records are right.
+- **Only aggregate roots get a `DbSet<>`.** Child entities are reached through their root.
+- **`Id<TEntity>` ordering is not creation order.** Version 7 GUIDs are only millisecond-granular and are not monotonic within a millisecond. Never paginate on an id, and never use one to decide what happened first — sort on an explicit timestamp column.
+- **Domain events are collected but not yet dispatched.** `Raise` records them; `DequeueDomainEvents` drains them. Until the Loom EF Core package exists, drain them yourself in a `SaveChanges` interceptor.
+
+Every `Id<TEntity>` needs one EF Core value converter. Register it once, generically:
+
+```csharp
+// Applied in AppDbContext.ConfigureConventions
+configurationBuilder.Properties<Id<Order>>()
+    .HaveConversion<IdConverter<Order>>();
+
+internal sealed class IdConverter<TEntity>()
+    : ValueConverter<Id<TEntity>, Guid>(id => id.Value, value => Id<TEntity>.From(value));
+```
+
+## 6. Persistence
+
+- **One `AppDbContext`**, in the host. `IEntityTypeConfiguration<T>` classes co-located per aggregate.
+- **Inject `DbContext` into handlers directly. No repositories.** `DbContext` is already a unit of work and `DbSet<T>` is already a repository; wrapping them produces passthrough interfaces and destroys the `IQueryable` composition that makes `Loom.Specifications` work.
+- **Reads project in the query:** `AsNoTracking()` then `.Select(...)` straight into the slice's response type. Never materialise an entity in order to map it — that is the most common performance defect in EF codebases.
+- **Migrations are generated with `dotnet ef`, reviewed by a human, and applied deliberately.** Never `EnsureCreated()`, never auto-migrate on startup in a deployed environment.
+- Dapper is permitted for a specific query that demands it, as a documented exception. It is not a second default.
+- **Apply specifications to the query the slice owns.** `db.Orders.Apply(new OverdueOrders(id))` — never hand a specification to something that queries on your behalf. Reintroducing a repository is the one way this design fails.
+- **Paging is the caller's decision, applied after the specification:** `.Apply(spec).ApplyPaging(request)`, then count and fetch. Return `Page<T>` so every endpoint reports paging identically.
+- **`PageRequest` validates itself, including a maximum size.** Never accept a raw page size from a query string without it — `?size=1000000` returns the table.
+
+## 7. Validation and errors
+
+- **FluentValidation for request shape** — format, ranges, required fields, cross-field consistency. One validator per slice, in the slice file.
+- **Validation runs through `Loom.Handlers.FluentValidation`'s decorator**, not an endpoint filter. A decorator behaves identically in an API, a worker, and a CLI; a filter only exists in the first. It is enabled once, for every handler: `services.AddLoomHandlers(chain => chain.WithValidation())`.
+- **Domain rules are never FluentValidation.** If a rule needs domain knowledge, it belongs in §5.
+- **Every error carries one of six categories:** `NotFound`, `Conflict`, `Invalid`, `Unauthorized`, `Forbidden`, `Unavailable`. These are semantic, not transport-specific, which is what lets one category become a status code in an API, a retry-or-dead-letter decision in a worker, and an exit code in a CLI.
+- **The set is closed.** A seventh category means the taxonomy has become a status-code enum. Carry the specifics as metadata on `Error<TMetadata>` instead.
+- **A failed result carries exactly one error.** Several validation failures are one `ValidationError` whose metadata is a field→messages map, which maps straight onto the ProblemDetails `errors` extension.
+- **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
+- **Never ignore a returned `Result`.** Failure-as-a-value is a value you can discard, and nothing currently warns you — `IDE0058` is off because it fires on every fluent call. Until the analyzer exists, this is caught in review. Use `_ = ...` when you genuinely mean to discard one.
+- Category-to-transport mapping lives in exactly one host extension method, never inline in a slice.
+
+## 8. Configuration and authorization
+
+- **Typed options only.** One `<Concern>Options` class per concern with a `const string SectionName`.
+- **Validate at startup:** `.ValidateDataAnnotations().ValidateOnStart()`. A misconfigured app must fail to boot, not fail on the first request that touches the bad setting.
+- **`IConfiguration` appears only in `Program.cs`.** Injecting it anywhere else is a defect.
+- **Secrets:** user-secrets locally, environment variables when deployed. Never in `appsettings*.json`, including `Development`.
+- **Authorization policies are named constants** in a `Policies` static class. No inline role or claim strings at call sites.
+- **Authorization that depends on domain state belongs in the handler**, returning a `Forbidden` error. "Can this user cancel *this* order" needs the order, so it cannot be an attribute.
+
+> **UNDECIDED:** Which identity provider issues tokens. Driven by the deployment environment,
+> so the template does not choose. ASP.NET Core Identity is out of scope — self-hosting
+> accounts, resets, and MFA is a project-defining decision, not a default.
+
+## 9. Observability
+
+- **Always an injected `ILogger<T>`.** Never a static logger, never `LoggerFactory.Create` at a call site.
+- **`[LoggerMessage]` source-generated log methods, not interpolated strings.** Interpolation allocates and boxes even when the level is disabled, and produces unstructured output.
+- OpenTelemetry is configured once, in `ServiceDefaults`. That file is your code — edit it rather than working around it.
+
+## 10. Testing
+
+- **`Domain` gets unit tests.** Pure, fast, no infrastructure.
+- **Every slice gets at least one integration test through its real entry point.** This is the load-bearing rule; correctness lives here, because there are no repository seams to unit-test against.
+- **`WebApplicationFactory` + Testcontainers Postgres**, one container and database per test assembly, **Respawn between tests**. Not transaction-rollback isolation — handlers own their transactions, so rollback-based isolation will lie to you.
+- **`Aspire.Hosting.Testing` for a handful of smoke tests only.** Booting the AppHost per test destroys the feedback loop.
+- **Never mock `DbContext`.** Mocking your own code is a design smell; mocking a genuine external dependency is fine.
+- **Outbound HTTP is stubbed at `HttpMessageHandler`**, or WireMock.Net when you need protocol fidelity.
+
+## 11. Enforcement
+
+`tests/MyApp.ArchitectureTests` asserts, with NetArchTest:
+
+1. `Domain` references nothing but Loom packages and the BCL.
+2. No slice namespace depends on another slice namespace.
+3. Domain entities appear in no request or response type's public surface.
+4. `IConfiguration` is referenced only from `Program.cs`.
+5. Every `IHandler<,>` implementation has a matching DI registration.
+
+A structural rule that is not in this list is a rule that will erode. If you add a structural
+rule to this file, add its test.
+
+## 12. Adding a slice
+
+1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace MyApp.Features.<Aggregate>.<Operation>;`.
+2. Write the request, the response, the validator, and the handler in that file.
+3. Register the handler and its decorator chain.
+4. Wire the entry point (see the archetype section below).
+5. Write at least one integration test through the real entry point.
+6. Run the §3 verify block.
+
+## 13. How to add a rule
+
+- One rule per bullet, imperative, self-contained.
+- Add a **rationale only if the rule is surprising** — if the obvious instinct is the opposite. Obvious rules need no defending.
+- Add a `// Do this` / `// Not this` snippet if a rule is easy to satisfy in letter and violate in spirit.
+- Unsettled rules get a `> **UNDECIDED:**` callout, not a guess.
+- **Budget: ~400 lines assembled.** Over budget means something moves out — into `.editorconfig`, an analyzer, or an architecture test. Growing past it is not an option; agents stop reading.

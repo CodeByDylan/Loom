@@ -1,0 +1,137 @@
+# AGENTS.md
+
+Rules for working **on Loom itself**. Loom is a family of foundational .NET packages,
+consumed by other projects. Rules for those consuming projects live in
+`docs/AGENTS.consumer.template.md` and **do not apply here**.
+
+## 1. Orientation
+
+Packages that exist today:
+
+| Package | Purpose | Does not contain |
+| --- | --- | --- |
+| `Loom.Results` | Result and error abstractions — the vocabulary every other package's signatures are written in. | Anything with a dependency. Anything domain-specific. |
+| `Loom.Entities` | `Id<TEntity>`, `Entity<TSelf>`, `AggregateRoot<TSelf>`, `IDomainEvent`. Identity, identity equality, and domain event collection. | Persistence. Querying. Event *dispatch*. Audit fields. Concurrency tokens. A `ValueObject` base — `sealed record` already does that. |
+| `Loom.Specifications` | Named business rules over a type: a predicate, optional eager-loading, optional ordering, as pure expression trees. Applied to an `IQueryable` the caller still owns. | Paging. Any specific ORM. A repository to consume them. |
+| `Loom.Paging` | `PageRequest` and `Page<T>` — offset paging vocabulary, so no project reinvents the envelope. | Cursor paging. Async counting (needs an ORM). |
+| `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` and `IHandler<TRequest>`, as pure types, so a consumer's domain project can declare handlers. | Anything touching a container. |
+| `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. | A dispatcher. See §5. |
+| `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
+
+Every package listed has code. There are no placeholder projects left.
+
+Layout: `src/Loom.<Name>/` and `tests/Loom.<Name>.Tests/`. The `.slnx` groups these into
+per-area virtual folders — virtual structure and disk structure are allowed to differ.
+
+## 2. Hard constraints
+
+1. **Check the dependency tier table (§4) before adding any `PackageReference` or `ProjectReference`.** If the reference is not permitted, stop and ask. Never promote a package a tier to make code compile.
+2. **`Loom.Results` depends on nothing.** BCL only. No exceptions.
+3. **Never throw for expected failures.** Failure is a return value.
+4. **`UNDECIDED` means stop and ask.** Do not resolve the question yourself, and do not silently pick a convention.
+5. **Never edit this file to resolve a conflict between a rule and your code.** If a rule blocks you, say so.
+6. **Run the §3 verify block before claiming done.** CI runs the same block; a green claim over a red build is a lie.
+7. **Never create a git tag, never `dotnet nuget push`.** Releasing is a human action.
+
+## 3. Build and verify
+
+Run all four, in order, before reporting work complete:
+
+```bash
+dotnet format                       # fixes formatting in place
+dotnet build                        # warnings are errors
+dotnet test                         # TUnit, via Microsoft.Testing.Platform
+dotnet format --verify-no-changes   # confirms nothing is left unformatted
+```
+
+- Run `dotnet format` (fixing), not verify-only. Do not hand-edit whitespace to satisfy the check.
+- If `dotnet format` touches files unrelated to your change, revert those files. Formatting-only churn does not belong in a feature diff.
+- `.editorconfig` is the authority on code style, not this file. To change how code looks, edit `.editorconfig`. Do not add style rules here.
+- `.github/workflows/ci.yml` runs exactly this block on push and PR.
+
+## 4. Dependency policy
+
+Every package sits in a tier. **References point strictly lower — never sideways.** Two packages
+in the same tier may not reference each other, which forces a genuine layering decision instead
+of letting a tier become a web of mutual references.
+
+| Tier | Packages | May reference |
+| --- | --- | --- |
+| 0 | `Loom.Results` | **Nothing.** BCL only. |
+| 1 | `Loom.Entities`, `Loom.Specifications`, `Loom.Paging`, `Loom.Handlers.Abstractions` | Tier 0 + BCL. |
+| 2 | `Loom.Handlers` | Tiers 0–1 + `Microsoft.Extensions.*` **Abstractions** packages only. |
+| 3 | `Loom.Handlers.FluentValidation` | Tiers 0–2 + one third-party dependency, named in the package ID. |
+
+- Tier 0 is absolute. `Loom.Results` appears in every consumer's method signatures, so any dependency it takes is in every consumer's transitive graph forever.
+- At Tier 2, reference abstractions packages only — `Microsoft.Extensions.Logging.Abstractions`, never `Microsoft.Extensions.Logging`. The non-abstractions package is the one that shows up in application code; it does not belong in a library.
+- Third-party coupling is declared in the package ID: `Loom.Persistence.EntityFrameworkCore`, never a `Loom.Persistence` that quietly pulls in EF Core. A consumer should be able to read their NuGet list and know their coupling.
+- The `dotnet-ef` tool in `dotnet-tools.json` exists for a future Tier 3 package. EF Core must not appear in Tiers 0–2.
+- All versions live in `Directory.Packages.props`. Never put a `Version` attribute on a `PackageReference`.
+
+## 5. API design
+
+- **Seal every public class** unless inheritance is a designed feature. Unsealing later is non-breaking; sealing later is not.
+- **Make helpers, extensions, and implementation details `internal`.** The abstractions a package exists to expose are public; nothing else is by default.
+- **Prefer immutability.** `init`-only or constructor-set properties, no setters. Mutable state in a foundational type needs an argument.
+- **Every public member has an XML doc comment.** This is enforced: `GenerateDocumentationFile` is on and warnings are errors. If a `<summary>` is hard to write, the API is not ready.
+- **Do not redeclare `TargetFramework`, `Nullable`, `ImplicitUsings`, or `LangVersion` in a `.csproj`.** `Directory.Build.props` owns them.
+- **One concept per file, named after it.** `Result` and `Result<T>` share `Result.cs` because they are one concept that converts between itself. Two unrelated types do not share a file.
+- **Throwing on a programming error is correct, and is not what §2.3 forbids.** Hard constraint 3 is about *expected* failures — a domain rule that did not hold. Misusing an API is a bug: reading `Value` off a failed result, or observing a `default`-constructed one, throws deliberately. Do not "fix" those guards by returning a failure; a silent wrong answer is worse than a stack trace.
+- **`Loom.Results.Error` is unsealed, as a documented exception to seal-by-default.** Consumers derive from it to declare domain errors, and deriving is what makes them convert implicitly to a `Result`. C# forbids user-defined conversions from an interface (CS0552), so an `IError` interface could not have offered that.
+- **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
+- **Avoid boxing on the success path of generic code.** `ArgumentNullException.ThrowIfNull` takes `object?`, so calling it on an unconstrained `T` boxes every value. Guard with `!typeof(T).IsValueType && value is null`, which the JIT erases for value types.
+- **`Loom.Handlers` never gains a dispatcher.** No `ISender`, no `IMediator`, no resolving a handler by request type. Consumers inject `IHandler<TRequest, TResponse>` directly, so the caller and the handler are visible to each other and the decorator chain is knowable from `Program.cs`. A dispatcher would let a caller invoke a handler it cannot see — the coupling-hiding that a slice architecture exists to prevent. This is the constraint most likely to be eroded by someone adding it "for completeness."
+- **Decorators are declared once, globally, in order, and never discovered.** No assembly scanning for decorators, no per-handler overrides. If reading the single `AddLoomHandlers` call does not tell you exactly what wraps a handler, the design has been broken.
+- **Entities are classes; value objects and domain events are records.** An entity is equal to another by *identity*, so structural equality is actively wrong for it — two `Order`s with the same `Id` are the same order however far their fields have diverged. `record` is the reflexive default for a new type now, which is exactly why this needs saying. `Entity<TSelf>` and `AggregateRoot<TSelf>` are the second and third documented exceptions to seal-by-default.
+- **A specification is a named rule, never a parameter bag, and never consumed by a repository.** `OverdueOrders(customerId)` is the shape. A specification that grows a boolean toggling part of its query is two specifications sharing a name — split it. Specifications are applied to an `IQueryable` the caller owns; the moment something else consumes them, the repository we rejected has returned. `Specification<T>` is the fourth documented exception to seal-by-default.
+- **Composition is over criteria, not whole specifications.** Two specifications each carrying their own ordering have no defined combination. Combine predicates with `Criteria.And`/`Or`/`Not`, which rebind parameters properly — never wrap in `Expression.Invoke`, which many query providers cannot translate.
+- **Do not present `Id<TEntity>` ordering as creation order.** Version 7 GUIDs embed a millisecond timestamp, and .NET does not make them monotonic within one — measured at ~50% inversion for values created back to back. Ordering is for index locality and stable sorting only. Never paginate on it, and never use it to decide which of two things happened first.
+
+## 6. Testing
+
+- **Every package has a test project**, created in the same change as the package. Not later.
+- **TUnit, with TUnit's built-in assertions.** No xUnit, no NUnit, no Shouldly, no FluentAssertions.
+- **No mocking library.** If a Loom package needs a mock to be tested, the design is wrong — say so rather than reaching for NSubstitute.
+- Test method names read as sentences: `HasValue_Is_False_When_Value_Is_Null`. `.editorconfig` disables the PascalCase naming rule under `tests/` for exactly this reason.
+- TUnit assertions are awaited: `await Assert.That(x).IsFalse();`.
+- **No mutable static state in tests.** TUnit runs tests in parallel by default, so a `static` counter or flag is shared across them and produces failures that look like product bugs. Record through an injected object scoped to the test instead.
+
+## 7. Adding a new package
+
+1. Create `src/Loom.<Name>/Loom.<Name>.csproj`. It should contain a `<Description>` and little else.
+2. Create `tests/Loom.<Name>.Tests/Loom.<Name>.Tests.csproj` with `<OutputType>Exe</OutputType>` and a `PackageReference` to `TUnit`.
+3. Register both in `Loom.slnx` under `/<Area>/src/` and `/<Area>/tests/`.
+4. Add the package to the §4 tier table **before** adding any reference to it or from it.
+5. Add any new dependency's version to `Directory.Packages.props`.
+6. Run the §3 verify block.
+
+## 8. Versioning and release
+
+- Versions come from git tags via MinVer. Tags look like `v0.3.0`; `MinVerTagPrefix` is `v`.
+- **All packages version in lockstep** from one repo-wide tag. There are no per-package tag streams.
+- Packages publish to **nuget.org** under the **MIT** licence (`LICENSE`, and `PackageLicenseExpression` in `Directory.Build.props`).
+- **Loom is pre-1.0, deliberately.** While on `0.x`, breaking changes are permitted on a minor bump and need no ceremony. Do not preserve an awkward API out of compatibility caution — there are no external consumers to protect. Fix the design.
+- Tagging and pushing are human actions (§2.7).
+
+## 9. Consuming Loom
+
+`docs/agents/` holds the opinionated stack and structure for projects *built on* Loom:
+`00-core.md` plus one delta per archetype (`10-api.md`, `10-worker.md`, `10-cli.md`).
+`scripts/new-agents-md.sh` assembles them into a single `AGENTS.md` for a new project.
+
+**Nothing in `docs/agents/` governs the code here.** Those files describe applications —
+EF Core, ASP.NET, FluentValidation, Aspire. Applying any of it to a Loom package would
+violate §4. Loom's constraints are the opposite of an application's.
+
+Planned-but-unbuilt packages are listed in `docs/ROADMAP.md`. It is a list of intentions,
+not a work order — do not start building from it.
+
+---
+
+## How to add a rule
+
+- One rule per bullet, imperative, self-contained.
+- Add a **rationale only if the rule is surprising** — i.e. if the obvious instinct is the opposite. Obvious rules do not need defending.
+- Add a `// Do this` / `// Not this` snippet if the rule is easy to satisfy in letter and violate in spirit.
+- If a rule should exist but is not settled, write a `> **UNDECIDED:**` callout in the relevant section rather than guessing. The set of these markers is the design agenda.
+- **Budget: ~200 lines.** Over budget means something must move out — down into `.editorconfig`, an analyzer, or an architecture test, or sideways into a package-level `src/Loom.<Name>/AGENTS.md` for rules that apply to one package only. Growing past the budget is not an option; agents stop reading.
