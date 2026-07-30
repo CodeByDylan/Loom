@@ -1,0 +1,9 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <ItemGroup>
+        <ProjectReference Include="..\..\..\src\Loom.Entities\Loom.Entities.csproj" />
+        <ProjectReference Include="..\..\..\src\Loom.Results\Loom.Results.csproj" />
+        <ProjectReference Include="..\..\..\src\Loom.Specifications\Loom.Specifications.csproj" />
+    </ItemGroup>
+
+</Project>

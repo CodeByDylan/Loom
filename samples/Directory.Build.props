@@ -1,0 +1,13 @@
+<Project>
+
+    <!-- Inherits the repository's build conventions, then relaxes the ones meant for shipped
+         packages. A sample is not published and does not need documentation comments on every
+         public member. -->
+    <Import Project="$([MSBuild]::GetPathOfFileAbove('Directory.Build.props', '$(MSBuildThisFileDirectory)../'))" />
+
+    <PropertyGroup>
+        <IsPackable>false</IsPackable>
+        <GenerateDocumentationFile>false</GenerateDocumentationFile>
+    </PropertyGroup>
+
+</Project>
