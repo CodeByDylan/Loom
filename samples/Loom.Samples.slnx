@@ -7,6 +7,8 @@
   <Folder Name="/Ordering/src/">
     <Project Path="src/Ordering.Domain/Ordering.Domain.csproj" />
     <Project Path="src/Ordering.Api/Ordering.Api.csproj" />
+    <Project Path="src/Ordering.ServiceDefaults/Ordering.ServiceDefaults.csproj" />
+    <Project Path="src/Ordering.AppHost/Ordering.AppHost.csproj" />
   </Folder>
   <Folder Name="/Ordering/tests/">
     <Project Path="tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj" />

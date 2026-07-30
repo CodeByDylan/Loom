@@ -19,6 +19,10 @@ public sealed class RouteTableTests
 {
     private static readonly string[] Expected =
     [
+        // Contributed by the scaffolded service defaults, in development only, which is why the test
+        // host pins its environment. They answer any verb, hence the marker rather than a method.
+        "ANY /health",
+        "ANY /alive",
         "POST /orders",
         "POST /orders/{orderId}/cancel",
         "POST /orders/{orderId}/ship",
@@ -36,11 +40,12 @@ public sealed class RouteTableTests
             .. endpoints.Endpoints
                 .OfType<RouteEndpoint>()
                 .Select(endpoint =>
-                    $"{string.Join(',', endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? ["?"])} "
+                    $"{string.Join(',', endpoint.Metadata.GetMetadata<HttpMethodMetadata>()?.HttpMethods ?? ["ANY"])} "
                     + $"/{endpoint.RoutePattern.RawText?.TrimStart('/')}")
                 .Order(StringComparer.Ordinal),
         ];
 
-        await Assert.That(actual).IsEquivalentTo([.. Expected.Order(StringComparer.Ordinal)]);
+        await Assert.That(actual).IsEquivalentTo([.. Expected.Order(StringComparer.Ordinal)])
+            .Because("the registered routes were: " + string.Join(", ", actual));
     }
 }

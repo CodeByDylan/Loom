@@ -1,3 +1,5 @@
+| `Ordering.AppHost` | Development-time orchestration: starts Postgres and the service and wires the connection string between them. Ships nothing. |
+| `Ordering.ServiceDefaults` | Telemetry, health, resilience and service discovery. Scaffolded into the solution as editable code rather than taken as a dependency. |
 # Samples
 
 `Ordering` is an HTTP API built on Loom, in its own solution so that an application's dependencies
@@ -56,6 +58,8 @@ that into a failing build.
 **An aggregate can raise an event about state it has not loaded.** Cancelling raises an event carrying
 the order total, which is computed from its lines. Without eager loading, the total was zero and the
 event was quietly wrong. A handler that raises an event must load what the event reports.
+
+**The route table snapshot earns its keep immediately.** Adding the health endpoints from the service defaults broke it, which is the point: a route appeared and the build failed until the expected set was updated deliberately. Those endpoints answer any verb and are development-only, so the test host pins its environment to keep the set deterministic.
 
 **Strongly-typed identities defeat a naive contract check.** An architecture test looking for domain
 entities in request and response types flags `Id<Order>` unless it stops unwrapping at the identity.

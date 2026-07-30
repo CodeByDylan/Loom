@@ -148,6 +148,9 @@ public sealed class OrderingApi : IAsyncDisposable
                 new KeyValuePair<string, string?>("Authentication:Audience", issuer),
             ]));
 
+            // Pinned so the route table is deterministic: the health endpoints are development-only.
+            builder.UseEnvironment("Development");
+
             return base.CreateHost(builder);
         }
     }

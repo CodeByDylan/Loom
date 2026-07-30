@@ -2,6 +2,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\Ordering.Domain\Ordering.Domain.csproj" />
+        <ProjectReference Include="..\Ordering.ServiceDefaults\Ordering.ServiceDefaults.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Handlers\Loom.Handlers.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Handlers.FluentValidation\Loom.Handlers.FluentValidation.csproj" />
         <ProjectReference Include="..\..\..\src\Loom.Paging\Loom.Paging.csproj" />

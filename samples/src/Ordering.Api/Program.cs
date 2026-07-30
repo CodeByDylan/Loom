@@ -13,6 +13,9 @@ using Ordering.Domain.Orders;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+// Telemetry, health, resilience and service discovery, from the scaffolded defaults project.
+builder.AddServiceDefaults();
+
 // Typed options only. IConfiguration appears here and nowhere else.
 builder.Services
     .AddOptions<AuthenticationOptions>()
@@ -87,6 +90,7 @@ WebApplication app = builder.Build();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapDefaultEndpoints();
 app.MapEndpoints(typeof(Program).Assembly);
 
 await app.RunAsync();
