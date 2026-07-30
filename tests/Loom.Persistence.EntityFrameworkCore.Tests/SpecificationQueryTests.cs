@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Loom.Persistence.EntityFrameworkCore.Tests;
 
-public class SpecificationQueryTests
+public sealed class SpecificationQueryTests
 {
     [Test]
     public async Task Criteria_Filter_The_Query()

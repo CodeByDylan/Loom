@@ -1,6 +1,6 @@
 namespace Loom.Results.Tests;
 
-public class ResultOfTTests
+public sealed class ResultOfTTests
 {
     private static Error AnError => Errors.NotFound("orders.not_found", "No such order.");
 

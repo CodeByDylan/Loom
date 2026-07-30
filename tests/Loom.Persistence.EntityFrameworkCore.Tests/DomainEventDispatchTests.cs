@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Loom.Persistence.EntityFrameworkCore.Tests;
 
-public class DomainEventDispatchTests
+public sealed class DomainEventDispatchTests
 {
     [Test]
     public async Task A_Handler_Runs_When_The_Aggregate_Is_Saved()

@@ -1,6 +1,6 @@
 namespace Loom.Results.Analyzers.Tests;
 
-public class DiscardedResultAnalyzerTests
+public sealed class DiscardedResultAnalyzerTests
 {
     [Test]
     public async Task A_Discarded_Result_Is_Reported()

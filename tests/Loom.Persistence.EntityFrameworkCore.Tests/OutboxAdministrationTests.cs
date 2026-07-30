@@ -6,7 +6,7 @@ namespace Loom.Persistence.EntityFrameworkCore.Tests;
 /// <summary>
 /// Reading and repairing an outbox: what was abandoned, retrying it, and clearing what was delivered.
 /// </summary>
-public class OutboxAdministrationTests
+public sealed class OutboxAdministrationTests
 {
     [Test]
     public async Task An_Abandoned_Message_Is_Found_With_Its_Evidence()

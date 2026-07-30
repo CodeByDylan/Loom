@@ -3,7 +3,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Loom.Persistence.EntityFrameworkCore.Tests;
 
-public class IdentityMappingTests
+public sealed class IdentityMappingTests
 {
     [Test]
     public async Task An_Identity_Round_Trips_Through_The_Database()

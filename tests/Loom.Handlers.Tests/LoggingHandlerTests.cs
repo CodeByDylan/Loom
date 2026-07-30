@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Loom.Handlers.Tests;
 
-public class LoggingHandlerTests
+public sealed class LoggingHandlerTests
 {
     [Test]
     public async Task A_Success_Is_Recorded_At_Debug()

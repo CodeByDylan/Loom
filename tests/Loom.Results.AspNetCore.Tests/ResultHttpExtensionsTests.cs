@@ -5,7 +5,7 @@ using Microsoft.Extensions.DependencyInjection;
 
 namespace Loom.Results.AspNetCore.Tests;
 
-public class ResultHttpExtensionsTests
+public sealed class ResultHttpExtensionsTests
 {
     [Test]
     [Arguments(ErrorCategory.Invalid, 400)]

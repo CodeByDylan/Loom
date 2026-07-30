@@ -9,7 +9,7 @@ namespace Loom.Persistence.EntityFrameworkCore.Tests;
 /// Registering the options directly would let the second call win, and the first context would run
 /// with settings nobody chose for it — silently, since nothing about that looks like a failure.
 /// </remarks>
-public class OutboxConfigurationTests
+public sealed class OutboxConfigurationTests
 {
     [Test]
     public async Task Two_Contexts_Keep_Their_Own_Settings()
