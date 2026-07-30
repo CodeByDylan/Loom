@@ -36,9 +36,10 @@ per-area virtual folders — virtual structure and disk structure are allowed to
 
 ## 3. Build and verify
 
-Run all four, in order, before reporting work complete:
+Run all five, in order, before reporting work complete:
 
 ```bash
+scripts/check-docs.sh               # markdown is neither built nor formatted
 dotnet format                       # fixes formatting in place
 dotnet build                        # warnings are errors
 dotnet test                         # TUnit, via Microsoft.Testing.Platform
@@ -48,6 +49,7 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 - Run `dotnet format` (fixing), not verify-only. Do not hand-edit whitespace to satisfy the check.
 - If `dotnet format` touches files unrelated to your change, revert those files. Formatting-only churn does not belong in a feature diff.
 - `.editorconfig` is the authority on code style, not this file. To change how code looks, edit `.editorconfig`. Do not add style rules here.
+- **Never edit a markdown table with a pattern substitution.** Two documents were silently corrupted that way — a table row fused onto a heading, and the same onto a template marker, which then leaked into every assembled consumer file. `scripts/check-docs.sh` now catches both, but the habit is the actual defect: edit tables by replacing exact text.
 - `.github/workflows/ci.yml` runs exactly this block on push and PR.
 
 ## 4. Dependency policy

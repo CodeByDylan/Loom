@@ -24,6 +24,7 @@
     <File Path="docs/agents/10-cli.md" />
   </Folder>
   <Folder Name="/- Solution Items/scripts/">
+    <File Path="scripts/check-docs.sh" />
     <File Path="scripts/new-agents-md.sh" />
   </Folder>
   <Folder Name="/Entities/" />
