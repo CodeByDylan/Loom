@@ -33,9 +33,12 @@ builder.Services.AddLoomPersistence(persistence => persistence
 // The chain is declared once and applies to every handler, so a slice cannot be registered without
 // validation by forgetting a call.
 builder.Services
-    // Declaration order is nesting order. Validation outermost, so an invalid request never reaches
-    // the handler; failure translation innermost, so it only sees the handler's own save.
+    // Declaration order is nesting order. Logging outermost, so nothing goes unrecorded — including a
+    // request refused by validation, which is the outcome most worth seeing. Validation next, so an
+    // invalid request never reaches the handler. Failure translation innermost, so it only sees the
+    // handler's own save.
     .AddLoomHandlers(chain => chain
+        .WithLogging()
         .WithValidation()
         .WithDomainEventFailures())
     .AddHandler<Ordering.Api.Features.Orders.PlaceOrder.Handler,

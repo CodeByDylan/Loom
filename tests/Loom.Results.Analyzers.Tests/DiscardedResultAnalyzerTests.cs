@@ -103,13 +103,18 @@ public class DiscardedResultAnalyzerTests
     [Test]
     public async Task A_Compilation_That_Has_Never_Heard_Of_A_Result_Is_Left_Alone()
     {
-        IReadOnlyList<string> reported = await AnalyzerHarness.RunAsync("""
+        // The reference is withheld, which is the only way to reach the analyzer's early exit. With it
+        // present the types resolve however little the snippet mentions them, so a snippet that merely
+        // avoids results would pass without that branch ever running.
+        IReadOnlyList<string> reported = await AnalyzerHarness.RunAsync(
+            """
             public sealed class Subject
             {
                 public int Count() => 1;
                 public void Run() => Count();
             }
-            """);
+            """,
+            referenceResults: false);
 
         await Assert.That(reported).IsEmpty();
     }
