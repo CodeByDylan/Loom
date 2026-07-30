@@ -1,0 +1,28 @@
+<Solution>
+  <Folder Name="/- Solution Items/">
+    <File Path="Directory.Build.props" />
+    <File Path="Loom.Samples.slnx" />
+    <File Path="README.md" />
+  </Folder>
+  <Folder Name="/Ordering/src/">
+    <Project Path="src/Ordering.Domain/Ordering.Domain.csproj" />
+    <Project Path="src/Ordering.Api/Ordering.Api.csproj" />
+    <Project Path="src/Ordering.ServiceDefaults/Ordering.ServiceDefaults.csproj" />
+    <Project Path="src/Ordering.AppHost/Ordering.AppHost.csproj" />
+  </Folder>
+  <Folder Name="/Ordering/tests/">
+    <Project Path="tests/Ordering.Domain.Tests/Ordering.Domain.Tests.csproj" />
+    <Project Path="tests/Ordering.Api.Tests/Ordering.Api.Tests.csproj" />
+    <Project Path="tests/Ordering.ArchitectureTests/Ordering.ArchitectureTests.csproj" />
+  </Folder>
+  <Folder Name="/Loom/">
+    <Project Path="../src/Loom.Entities/Loom.Entities.csproj" />
+    <Project Path="../src/Loom.Results/Loom.Results.csproj" />
+    <Project Path="../src/Loom.Specifications/Loom.Specifications.csproj" />
+    <Project Path="../src/Loom.Handlers/Loom.Handlers.csproj" />
+    <Project Path="../src/Loom.Handlers.Abstractions/Loom.Handlers.Abstractions.csproj" />
+    <Project Path="../src/Loom.Handlers.FluentValidation/Loom.Handlers.FluentValidation.csproj" />
+    <Project Path="../src/Loom.Paging/Loom.Paging.csproj" />
+    <Project Path="../src/Loom.Persistence.EntityFrameworkCore/Loom.Persistence.EntityFrameworkCore.csproj" />
+  </Folder>
+</Solution>

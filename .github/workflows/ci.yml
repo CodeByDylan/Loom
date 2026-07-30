@@ -14,6 +14,9 @@ jobs:
         with:
           # MinVer derives the version from tags, so it needs full history.
           fetch-depth: 0
+          # Nothing here pushes, so the token has no reason to remain in the git config
+          # where any later step could read it.
+          persist-credentials: false
 
       - uses: actions/setup-dotnet@v4
         with:
@@ -25,3 +28,24 @@ jobs:
       - run: dotnet format --verify-no-changes
       - run: dotnet build  --no-restore
       - run: dotnet test   --no-build
+
+  # The sample lives in its own solution, so it needs its own job. It is what proves the packages
+  # work together, and its integration tests need a real database, which the runner supplies through
+  # Docker rather than through a service container: Testcontainers starts and stops it itself.
+  sample:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - run: dotnet restore samples/Loom.Samples.slnx
+
+      - run: dotnet format samples/Loom.Samples.slnx --verify-no-changes
+      - run: dotnet build  samples/Loom.Samples.slnx --no-restore
+      - run: dotnet test   samples/Loom.Samples.slnx --no-build
