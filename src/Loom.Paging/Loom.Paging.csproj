@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <Description>Offset-based paging vocabulary: a validated page request and a counted page of results. Depends on nothing.</Description>
+    </PropertyGroup>
+
+</Project>

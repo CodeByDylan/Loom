@@ -24,8 +24,12 @@
   <Folder Name="/Handlers/src/" />
   <Folder Name="/Handlers/tests/" />
   <Folder Name="/Paging/" />
-  <Folder Name="/Paging/src/" />
-  <Folder Name="/Paging/tests/" />
+  <Folder Name="/Paging/src/">
+    <Project Path="src/Loom.Paging/Loom.Paging.csproj" />
+  </Folder>
+  <Folder Name="/Paging/tests/">
+    <Project Path="tests/Loom.Paging.Tests/Loom.Paging.Tests.csproj" />
+  </Folder>
   <Folder Name="/Results/" />
   <Folder Name="/Results/src/">
     <Project Path="src/Loom.Results/Loom.Results.csproj" />
