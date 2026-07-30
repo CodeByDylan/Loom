@@ -129,7 +129,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 - **Typed options only.** One `<Concern>Options` class per concern with a `const string SectionName`.
 - **Validate at startup:** `.ValidateDataAnnotations().ValidateOnStart()`. A misconfigured app must fail to boot, not fail on the first request that touches the bad setting.
-- **`IConfiguration` appears only in `Program.cs`.** Injecting it anywhere else is a defect.
+- **`IConfiguration` is read only in the composition root** — `Program.cs`, and the startup extensions it calls on the builder, such as `ServiceDefaults`. **Never inject it into a type resolved from the container**; bind a typed options class and inject that. The distinction is what the rule protects: reading a value while composing the application is composition, whereas a service reaching for configuration at run time hides a dependency the constructor does not declare.
 - **Secrets:** user-secrets locally, environment variables when deployed. Never in `appsettings*.json`, including `Development`.
 - **Authorization policies are named constants** in a `Policies` static class. No inline role or claim strings at call sites.
 - **Authorization that depends on domain state belongs in the handler**, returning a `Forbidden` error. "Can this user cancel *this* order" needs the order, so it cannot be an attribute.
@@ -160,7 +160,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 1. `Domain` references nothing but Loom packages and the BCL.
 2. No slice namespace depends on another slice namespace.
 3. Domain entities appear in no request or response type's public surface.
-4. `IConfiguration` is referenced only from `Program.cs`.
+4. `IConfiguration` is a constructor parameter of no type — it is read in the composition root or not at all.
 5. Every `IHandler<,>` implementation has a matching DI registration.
 
 A structural rule that is not in this list is a rule that will erode. If you add a structural
