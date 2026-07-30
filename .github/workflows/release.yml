@@ -1,0 +1,72 @@
+name: Release
+
+# Publishing is a human action, and this is where that is enforced rather than merely stated:
+# nothing here runs without a tag someone pushed, and the push step waits on an environment whose
+# protection rules live in repository settings.
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      dryRun:
+        description: Pack and check, but publish nothing.
+        type: boolean
+        default: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # Configure required reviewers on this environment in repository settings. Without them the tag
+    # alone releases; with them a person confirms it.
+    environment: nuget
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # MinVer derives the version from tags, so it needs the whole history and the tags with it.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - run: scripts/check-docs.sh
+
+      - run: dotnet restore
+
+      # A release is verified the same way anything else is. Publishing something that was never
+      # tested would make the tag the only evidence it worked.
+      - run: dotnet format --verify-no-changes
+      - run: dotnet build --no-restore --configuration Release
+      - run: dotnet test --no-build --configuration Release
+
+      - name: Pack
+        run: dotnet pack --no-build --configuration Release --output artifacts
+
+      # MinVer is configured, not magic: a wrong tag prefix or a shallow clone yields
+      # 0.0.0-alpha.0.N instead of the tagged version, and pushing that would burn the version
+      # number for good. So the produced packages are compared against the tag before anything
+      # leaves the runner.
+      - name: Check the packages carry the tagged version
+        if: github.ref_type == 'tag'
+        run: scripts/check-release-version.sh "${GITHUB_REF_NAME}" artifacts
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: packages
+          path: artifacts/*
+          if-no-files-found: error
+
+      - name: Publish
+        if: github.ref_type == 'tag' && inputs.dryRun != true
+        env:
+          NUGET_API_KEY: ${{ secrets.NUGET_API_KEY }}
+        # Symbol packages are pushed alongside their own package, so only the packages are named
+        # here. Skipping duplicates makes re-running a partly failed release safe.
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --source https://api.nuget.org/v3/index.json
+          --api-key "$NUGET_API_KEY"
+          --skip-duplicate

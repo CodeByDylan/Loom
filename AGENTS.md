@@ -123,7 +123,10 @@ of letting a tier become a web of mutual references.
 - **All packages version in lockstep** from one repo-wide tag. There are no per-package tag streams.
 - Packages publish to **nuget.org** under the **MIT** licence (`LICENSE`, and `PackageLicenseExpression` in `Directory.Build.props`).
 - **Loom is pre-1.0, deliberately.** While on `0.x`, breaking changes are permitted on a minor bump and need no ceremony. Do not preserve an awkward API out of compatibility caution — there are no external consumers to protect. Fix the design.
-- Tagging and pushing are human actions (§2.7).
+- Tagging and pushing are human actions (§2.7). `release.yml` is what makes that mechanical rather than customary: it runs only for a tag someone pushed, and its publish step waits on the `nuget` environment, whose required reviewers are configured in repository settings. An agent prepares a release; a person causes one.
+- **A release verifies before it packs, and checks the version before it pushes.** `scripts/check-release-version.sh` compares every produced package against the tag. MinVer is configured, not magical: a wrong prefix or a shallow clone yields `0.0.0-alpha.0.N` while everything else looks healthy, and a published version can never be replaced — so the wrong number would be burned for good.
+- **`v0.1.0` releases `0.1.0`.** The prefix in the tag is stripped, matching `MinVerTagPrefix`. A tag without it is refused rather than guessed at.
+- Publishing needs a `NUGET_API_KEY` secret on the repository. `workflow_dispatch` runs the whole thing without publishing, which is how to check a release before making one.
 
 ## 9. Consuming Loom
 
