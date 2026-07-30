@@ -15,9 +15,11 @@ outgrown this file.
 
 ## Built
 
-`Loom.Http` shipped as **`Loom.Results.AspNetCore`**, at Tier 3 rather than the Tier 2 planned here:
-problem details and results are ASP.NET Core types, and Tier 2 admits only `Microsoft.Extensions.*`
-abstractions, so the coupling had to be named in the identifier.
+`Loom.Http` shipped as **`Loom.Results.AspNetCore`**, at Tier 3 rather than the Tier 2 planned here.
+`Loom.Results` itself remains Tier 0 and knows nothing of HTTP; what forces Tier 3 is the other side
+of the translation — `ProblemDetails` and ASP.NET Core's own `IResult` — which belong to a framework
+that Tier 2 does not admit, since it allows only `Microsoft.Extensions.*` abstractions. Hence the
+coupling is named in the identifier.
 
 It was also built before the "two consumer projects" condition originally written here was met,
 deliberately. That condition assumed a stability obligation Loom has not taken on — while on `0.x`,

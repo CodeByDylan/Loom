@@ -50,7 +50,7 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 - If `dotnet format` touches files unrelated to your change, revert those files. Formatting-only churn does not belong in a feature diff.
 - `.editorconfig` is the authority on code style, not this file. To change how code looks, edit `.editorconfig`. Do not add style rules here.
 - **Never edit a markdown table with a pattern substitution.** Two documents were silently corrupted that way — a table row fused onto a heading, and the same onto a template marker, which then leaked into every assembled consumer file. `scripts/check-docs.sh` now catches both, but the habit is the actual defect: edit tables by replacing exact text.
-- `.github/workflows/ci.yml` runs exactly this block on push and PR.
+- `.github/workflows/ci.yml` runs the same checks on push and PR, with one deliberate difference: it has no fixing `dotnet format` step, only the verify. CI cannot commit fixes, so formatting is fixed locally and merely confirmed there.
 
 ## 4. Dependency policy
 

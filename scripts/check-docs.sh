@@ -11,7 +11,9 @@
 
 set -uo pipefail
 
-cd "$(dirname "${BASH_SOURCE[0]}")/.."
+# Every path below is repository-relative, so running from the wrong directory would check the
+# wrong files — or none — and report success.
+cd "$(dirname "${BASH_SOURCE[0]}")/.." || { printf 'check-docs: cannot find the repository root\n' >&2; exit 1; }
 
 failures=0
 
@@ -63,8 +65,11 @@ while IFS= read -r document; do
         fail "$document: a table row is fused to a heading or a comment (see above)"
     fi
 
+    # Adjacent pipes are legal Markdown for an empty cell, but this repository writes empty cells
+    # with a space — `| |`, never `||` — precisely so that adjacent pipes only ever mean two rows
+    # joined into one. This check is what enforces that convention.
     if grep -nE '^\|.*\|\|' "$document" >&2; then
-        fail "$document: a table row contains an empty cell, which usually means two rows were joined"
+        fail "$document: adjacent pipes in a table row; write an empty cell as '| |', since '||' is reserved as the signature of two joined rows"
     fi
 done < <(git ls-files '*.md')
 
