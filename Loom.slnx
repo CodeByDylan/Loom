@@ -14,8 +14,12 @@
     <File Path=".github/workflows/ci.yml" />
   </Folder>
   <Folder Name="/Entities/" />
-  <Folder Name="/Entities/src/" />
-  <Folder Name="/Entities/tests/" />
+  <Folder Name="/Entities/src/">
+    <Project Path="src/Loom.Entities/Loom.Entities.csproj" />
+  </Folder>
+  <Folder Name="/Entities/tests/">
+    <Project Path="tests/Loom.Entities.Tests/Loom.Entities.Tests.csproj" />
+  </Folder>
   <Folder Name="/Handlers/" />
   <Folder Name="/Handlers/src/" />
   <Folder Name="/Handlers/tests/" />
