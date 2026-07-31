@@ -8,6 +8,11 @@ on:
 # Tags are not built here. release.yml owns them, and runs this same verification itself before it
 # packs — two workflows racing on one tag would only make it unclear which result gated the publish.
 
+# Nothing in CI writes to the repository, so the token says so — the same least-privilege stance
+# release.yml already takes explicitly.
+permissions:
+  contents: read
+
 jobs:
   verify:
     runs-on: ubuntu-latest
