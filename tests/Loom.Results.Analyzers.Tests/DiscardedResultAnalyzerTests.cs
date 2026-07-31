@@ -119,6 +119,32 @@ public sealed class DiscardedResultAnalyzerTests
         await Assert.That(reported).IsEmpty();
     }
 
+    [Test]
+    public async Task A_Result_Discarded_Inside_A_Lambda_Is_Reported()
+    {
+        // Roslyn lowers an expression-bodied void lambda to an expression statement, so the discard
+        // inside is the same operation shape as one in an ordinary method body. Pinned because the
+        // guidance once claimed the opposite, and nothing had checked.
+        IReadOnlyList<string> expressionBodied = await AnalyzerHarness.RunAsync(
+            Wrap("System.Action probe = () => subject.Cancel(); probe();"));
+        IReadOnlyList<string> blockBodied = await AnalyzerHarness.RunAsync(
+            Wrap("System.Action probe = () => { subject.Cancel(); }; probe();"));
+
+        await Assert.That(expressionBodied).IsEquivalentTo([DiscardedResultAnalyzer.DiagnosticId]);
+        await Assert.That(blockBodied).IsEquivalentTo([DiscardedResultAnalyzer.DiagnosticId]);
+    }
+
+    [Test]
+    public async Task An_Unawaited_Task_Of_Result_Is_Not_Reported()
+    {
+        // The documented blind spot, pinned so the guidance and the analyzer cannot drift apart again:
+        // the statement's value is a Task, not a Result, and following into the task would need
+        // flow analysis this analyzer deliberately does not do.
+        IReadOnlyList<string> reported = await AnalyzerHarness.RunAsync(Wrap("subject.CancelAsync();"));
+
+        await Assert.That(reported).IsEmpty();
+    }
+
     private static string Wrap(string statements) => $$"""
         using System.Threading.Tasks;
         using Loom.Results;
