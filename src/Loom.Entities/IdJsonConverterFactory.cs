@@ -12,7 +12,7 @@ namespace Loom.Entities;
 /// registering anything. Without it, an identity would serialize as <c>{"value":"..."}</c> where
 /// every client expects a string.
 /// </remarks>
-public sealed class IdJsonConverterFactory : JsonConverterFactory
+internal sealed class IdJsonConverterFactory : JsonConverterFactory
 {
     /// <inheritdoc />
     public override bool CanConvert(Type typeToConvert) =>
@@ -29,6 +29,7 @@ public sealed class IdJsonConverterFactory : JsonConverterFactory
     }
 }
 
+// The factory's own product, and reachable no other way, so it lives beside the thing that makes it.
 internal sealed class IdJsonConverter<TEntity> : JsonConverter<Id<TEntity>>
 {
     public override Id<TEntity> Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options)
