@@ -56,6 +56,9 @@ internal abstract class SqliteHost : IAsyncDisposable
     private protected T Resolve<T>()
         where T : notnull => Provider.GetRequiredService<T>();
 
+    /// <summary>Disposes the container, then the connection that holds the database alive.</summary>
+    /// <remarks>In that order: a provider disposed after its connection would dispose contexts over a
+    /// closed one.</remarks>
     public async ValueTask DisposeAsync()
     {
         if (_provider is not null)
@@ -69,30 +72,5 @@ internal abstract class SqliteHost : IAsyncDisposable
         }
 
         GC.SuppressFinalize(this);
-    }
-}
-
-/// <summary>Records what handlers did, through the container rather than static state.</summary>
-internal sealed class Recorder
-{
-    private readonly List<string> _handled = [];
-
-    internal IReadOnlyList<string> Handled
-    {
-        get
-        {
-            lock (_handled)
-            {
-                return [.. _handled];
-            }
-        }
-    }
-
-    internal void Record(string what)
-    {
-        lock (_handled)
-        {
-            _handled.Add(what);
-        }
     }
 }
