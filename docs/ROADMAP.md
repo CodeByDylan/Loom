@@ -24,14 +24,20 @@ letter, log once — lives in `RunOnceAsync`, alongside the scope it resolves an
 dispatches to; `ExecuteAsync` above it only schedules and keeps the loop alive. If a second worker project
 ever wants the same mapping, that is the moment to consider a package for it, not before.
 
-`Loom.Templates` shipped with **one archetype**, `loom-api`, not three. The API is the only archetype
-with a reference implementation: `samples/Ordering` builds, runs and has already had four defects shaken
-out of it, so the template was derived from something proven rather than invented to match a document.
-There is no reference worker and no reference CLI, and inventing their structure inside a package whose
-entire purpose is that people copy it unexamined is how a guess becomes everyone's convention.
+`Loom.Templates` ships **two archetypes**, `loom-api` and `loom-worker`; `loom-cli` remains planned.
+
+The API went first because it was the only one with a reference implementation: `samples/Ordering`
+builds, runs and had already had four defects shaken out of it, so that template was derived from
+something proven rather than invented to match a document. The worker followed without one, which is
+why its own tests carry the weight instead — the pass and one guarded iteration are asserted directly,
+with no clock and no timer.
+
+The CLI still has neither a reference implementation nor a category-to-exit-code mapping in any package,
+and inventing structure inside a package whose entire purpose is that people copy it unexamined is how a
+guess becomes everyone's convention.
 
 So `scripts/new-agents-md.sh` survives. This entry originally said the templates replace it; that is not
-true while two archetypes still need it, and it stays until they exist.
+true while `loom-cli` still needs it, and it stays until that archetype exists.
 
 The `AGENTS.md` is assembled at pack time rather than at scaffold time, and the assembled copy is
 committed so the package content is exactly what the repository shows. `check-docs.sh` regenerates it and

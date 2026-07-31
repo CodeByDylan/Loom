@@ -1,5 +1,6 @@
 using FluentValidation;
 using Loom.Handlers;
+using Loom.Persistence;
 using Loom.Results;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Domain.Widgets;
@@ -34,7 +35,7 @@ internal sealed class Handler(AppDbContext database) : IHandler<Request, Respons
         // last tick, so an unbounded query is one backlog away from loading the table into memory;
         // ordering makes which rows a pass takes deterministic rather than whatever the plan returns.
         List<Widget> oversized = await database.Widgets
-            .Where(widget => !widget.IsRetired && widget.Size > request.LargerThan)
+            .ApplySpecification(new OversizedWidgets(request.LargerThan))
             .OrderBy(widget => widget.Size)
             .ThenBy(widget => widget.Id)
             .Take(request.BatchSize)

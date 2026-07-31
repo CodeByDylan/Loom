@@ -21,4 +21,4 @@ IHost host = builder.Build();
 await host.RunAsync();
 
 // Exposed so the test assembly can name this one.
-public partial class Program;
+public sealed partial class Program;

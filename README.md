@@ -3,12 +3,19 @@
 Loom is a group of foundational packages for multiple project types. Heavily based on Clean
 Architecture with vertical slice structure enforcement, but very opinionated in my own vision.
 
-Nine packages, versioned in lockstep, each doing one thing and depending only on packages below it.
+Ten packages, versioned in lockstep, each doing one thing and depending only on packages below it.
 The opinions are the point: there is one way to report a failure, one way to run a handler, one way
 to turn a failure into a status code. Where a decision is forced, Loom makes it. Where it is taste,
 Loom leaves you the object and gets out of the way.
 
 ## Installing
+
+Start a whole solution from a template, or add packages to one you have.
+
+```bash
+dotnet new install CodeByDylan.Loom.Templates
+dotnet new loom-api --name Acme.Billing      # or loom-worker
+```
 
 **Identifiers carry a `CodeByDylan.` prefix; namespaces do not:**
 
@@ -27,7 +34,8 @@ published under it by other authors. The namespace stays short because it is the
 ## The packages
 
 Each installs as `CodeByDylan.<name>`. Take only the ones you need; nothing pulls in a framework you
-did not ask for.
+did not ask for. `Loom.Templates` is the exception — it is installed with `dotnet new install`, not
+referenced by a project.
 
 | Package | What it gives you |
 | --- | --- |
@@ -39,6 +47,7 @@ did not ask for.
 | `Loom.Handlers` | Registers handlers and wraps each in an explicit, ordered decorator chain. Carries the logging decorator. |
 | `Loom.Handlers.FluentValidation` | A decorator that validates a request before the handler runs, returning an `Invalid` failure. |
 | `Loom.Results.AspNetCore` | `result.ToHttpResult()` — the category-to-status-code mapping, as RFC 9457 problem details. |
+| `Loom.Templates` | `dotnet new` templates that scaffold a whole solution — `loom-api` and `loom-worker` — with the guidance for working in it already assembled. Ships no assembly. |
 | `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch inside the save's transaction, and an optional transactional outbox with administration over it. |
 
 ## What it looks like

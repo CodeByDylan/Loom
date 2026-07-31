@@ -53,6 +53,14 @@ internal sealed partial class RetireWidgetsPass(
             // The category decides what happens next, which is the same decision a status code
             // expresses at an HTTP boundary. Only a dependency that might recover is worth retrying;
             // anything the caller got wrong will be just as wrong next time.
+            if (result.Error.Category is ErrorCategory.NotFound)
+            {
+                // Nothing to do rather than something wrong: a scheduled pass finding no work is the
+                // ordinary case on a quiet system, so it is recorded once and not raised as a failure.
+                NothingToDo(logger, result.Error.Code);
+                return;
+            }
+
             if (result.Error.Category is not ErrorCategory.Unavailable)
             {
                 DeadLettered(logger, result.Error.Code, result.Error.Message);
@@ -73,6 +81,9 @@ internal sealed partial class RetireWidgetsPass(
 
     [LoggerMessage(Level = LogLevel.Information, Message = "Retired {Count} widget(s).")]
     private static partial void Retired(ILogger logger, int count);
+
+    [LoggerMessage(Level = LogLevel.Information, Message = "Nothing to do: {Code}")]
+    private static partial void NothingToDo(ILogger logger, string code);
 
     [LoggerMessage(Level = LogLevel.Warning, Message = "Pass abandoned: {Code} {Reason}")]
     private static partial void DeadLettered(ILogger logger, string code, string reason);
