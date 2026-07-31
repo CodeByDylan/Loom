@@ -202,11 +202,25 @@ internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimePro
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5), clock);
         while (await timer.WaitForNextTickAsync(ct))
         {
-            await using var scope = scopes.CreateAsyncScope();
-            var handler = scope.ServiceProvider.GetRequiredService<IHandler<Request, Response>>();
-            var result = await handler.HandleAsync(new Request(), ct);
-            // map result category to retry / dead-letter / log — never throw to signal it
+            try
+            {
+                await RunOnceAsync(ct);
+            }
+            catch (Exception exception)
+                when (exception is not OperationCanceledException || !ct.IsCancellationRequested)
+            {
+                // Log and continue. Only cancellation that shutdown asked for ends the loop.
+            }
         }
+    }
+
+    // ExecuteAsync schedules and keeps the loop alive; one pass lives here.
+    private async Task RunOnceAsync(CancellationToken ct)
+    {
+        await using var scope = scopes.CreateAsyncScope();
+        var handler = scope.ServiceProvider.GetRequiredService<IHandler<Request, Response>>();
+        var result = await handler.HandleAsync(new Request(), ct);
+        // map result category to retry / dead-letter / log — never throw to signal it
     }
 }
 ```
@@ -224,4 +238,5 @@ internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimePro
 ### Testing
 
 - **Handlers are tested directly**, against Testcontainers Postgres, with Respawn between tests. There is no transport to go through, so the handler *is* the entry point.
-- **Test the schedule separately from the work.** Inject a fake `TimeProvider` and assert the loop dispatches; do not sleep in tests.
+- **Separate the pass from the schedule, and test the pass.** `RunOnceAsync` holds everything decided by a result — the scope, the dispatch, retry against dead-letter — so it can be exercised against a stub handler with no clock and no timer. Make the retry backoff a setting so a test can set it to zero.
+- **Test one guarded iteration, not the timer.** Extract the `try`/`catch` so a test can call it directly and assert which exceptions survive it. That a failing pass does not end the loop is your logic; that `PeriodicTimer` fires is the BCL's. Driving a real `BackgroundService` from a fake clock needs the scheduler to hand off between advancing the clock and the loop resuming — a test that does it is flaky unless it sleeps, and then it is a slow test of someone else's code.
