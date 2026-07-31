@@ -8,9 +8,21 @@ outgrown this file.
 
 | Package | Tier | Why |
 | --- | --- | --- |
-| `loom-worker`, `loom-cli` templates | n/a | The remaining two archetypes. Held back deliberately — see `Loom.Templates` below. |
+| `loom-cli` template | n/a | The last archetype. Needs `System.CommandLine` and a category-to-exit-code mapping that no package provides yet. |
 
 ## Built
+
+`loom-worker` followed, so two of the three archetypes exist. Its schedule is tested by advancing a
+fake clock rather than sleeping, and building it exposed two defects in that test harness worth
+recording: asserting one dispatch hid the fact that the loop only ever ran once, and `PeriodicTimer`
+coalesces ticks, so advancing a fake clock in a tight burst collapses every tick into a single
+iteration. Both tests now require a second dispatch, which is what actually proves the loop survived
+the first.
+
+The worker has no equivalent of `ToHttpResult()`. Its category-to-disposition mapping — retry, dead
+letter, log once — lives in `RunOnceAsync`, alongside the scope it resolves and the handler it
+dispatches to; `ExecuteAsync` above it only schedules and keeps the loop alive. If a second worker project
+ever wants the same mapping, that is the moment to consider a package for it, not before.
 
 `Loom.Templates` shipped with **one archetype**, `loom-api`, not three. The API is the only archetype
 with a reference implementation: `samples/Ordering` builds, runs and has already had four defects shaken

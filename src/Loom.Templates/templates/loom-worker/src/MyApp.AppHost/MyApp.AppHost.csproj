@@ -16,7 +16,7 @@
     </ItemGroup>
 
     <ItemGroup>
-        <ProjectReference Include="..\MyApp.Api\MyApp.Api.csproj" />
+        <ProjectReference Include="..\MyApp.Worker\MyApp.Worker.csproj" />
     </ItemGroup>
 
 </Project>

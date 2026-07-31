@@ -64,6 +64,14 @@ jobs:
   # The dotted name is deliberate. It is the case that breaks, and the one people actually use.
   template:
     runs-on: ubuntu-latest
+
+    # Every archetype, because they are separate trees: a fix applied to one is not applied to the
+    # other, and only building both notices.
+    strategy:
+      fail-fast: false
+      matrix:
+        archetype: [loom-api, loom-worker]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -81,7 +89,7 @@ jobs:
         run: dotnet new install artifacts/templates/*.nupkg
 
       - name: Scaffold a solution
-        run: dotnet new loom-api --name Acme.Billing --output "$RUNNER_TEMP/scaffold/Acme.Billing"
+        run: dotnet new ${{ matrix.archetype }} --name Acme.Billing --output "$RUNNER_TEMP/scaffold/Acme.Billing"
 
       - name: Build what it produced
         working-directory: ${{ runner.temp }}/scaffold/Acme.Billing

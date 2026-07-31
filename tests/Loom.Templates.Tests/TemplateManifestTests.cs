@@ -101,6 +101,34 @@ public sealed class TemplateManifestTests
         await Assert.That(content).DoesNotContain("LOOM-TEMPLATE");
     }
 
+    [Test]
+    public async Task Every_Template_Starts_From_The_Same_Root_Configuration()
+    {
+        string[] shared = ["Directory.Build.props", "global.json", ".editorconfig", ".gitignore"];
+        string[] templates = [.. Templates().Order(StringComparer.Ordinal)];
+
+        // Two, not one. With a single template the comparison below never runs and the test passes
+        // while checking nothing.
+        await Assert.That(templates.Length).IsGreaterThanOrEqualTo(2);
+
+        // Duplicated across archetypes because a dotnet new template has to be a self-contained tree.
+        // Duplication that nothing checks is duplication that drifts, and an archetype quietly built on
+        // different conventions is the one failure this package cannot afford.
+        foreach (string file in shared)
+        {
+            // Bytes rather than text, so a byte-order mark or a line-ending change counts as the
+            // divergence it is.
+            byte[] expected = await File.ReadAllBytesAsync(Path.Combine(TemplatesRoot, templates[0], file));
+
+            foreach (string template in templates.Skip(1))
+            {
+                byte[] actual = await File.ReadAllBytesAsync(Path.Combine(TemplatesRoot, template, file));
+
+                await Assert.That(actual).IsEquivalentTo(expected);
+            }
+        }
+    }
+
     private static async Task<JsonElement> ReadManifestAsync(string template)
     {
         string path = Path.Combine(TemplatesRoot, template, ".template.config", "template.json");
