@@ -1,5 +1,3 @@
-using Loom.Handlers;
-using Loom.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.Worker.Infrastructure;
@@ -41,22 +39,12 @@ public sealed class WorkerHost : IAsyncDisposable
         PostgreSqlContainer container = new PostgreSqlBuilder("postgres:17-alpine").Build();
         await container.StartAsync();
 
+        // The application's own registrations, not a second set written for the tests. A hand-built
+        // graph can differ from the real one in exactly the ways that matter — a missing decorator, an
+        // unregistered validator — and still pass.
         ServiceCollection services = new();
         services.AddLogging();
-        services.AddSingleton(TimeProvider.System);
-        services.AddLoomPersistence();
-        services.AddDbContext<AppDbContext>((serviceProvider, options) => options
-            .UseNpgsql(container.GetConnectionString())
-            .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
-
-        services
-            .AddLoomHandlers(chain => chain.WithLogging().WithValidation().WithDomainEventFailures())
-            .AddHandler<
-                Features.Widgets.RetireOversizedWidgets.Handler,
-                Features.Widgets.RetireOversizedWidgets.Request,
-                Features.Widgets.RetireOversizedWidgets.Response>();
-
-        services.AddValidatorsFromWorker();
+        services.AddWorkerServices(container.GetConnectionString());
 
         ServiceProvider provider = services.BuildServiceProvider();
 
