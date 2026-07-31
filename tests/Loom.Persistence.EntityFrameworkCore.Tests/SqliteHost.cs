@@ -1,0 +1,97 @@
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.DependencyInjection;
+
+namespace Loom.Persistence.EntityFrameworkCore.Tests;
+
+/// <summary>
+/// The container bootstrap a host test needs: an open in-memory SQLite connection, a context
+/// registered against it with the domain event interceptor attached, and the schema created.
+/// </summary>
+/// <remarks>
+/// Shared because the two hosts differ only in what they register, and a bootstrap copied per host is
+/// the kind of thing that gets fixed in one copy. What varies — the persistence options, the handlers,
+/// the context type — is the argument.
+/// <para>
+/// Distinct from <see cref="SqliteFixture" />, which builds contexts directly and exists precisely to
+/// test what happens without a container.
+/// </para>
+/// </remarks>
+internal abstract class SqliteHost : IAsyncDisposable
+{
+    private SqliteConnection? _connection;
+    private ServiceProvider? _provider;
+
+    /// <summary>Opens the database, registers the context and creates the schema.</summary>
+    /// <typeparam name="TContext">The context under test.</typeparam>
+    /// <param name="configure">Registers whatever else the host needs.</param>
+    private protected async Task InitialiseAsync<TContext>(Action<IServiceCollection> configure)
+        where TContext : DbContext
+    {
+        _connection = new SqliteConnection("Filename=:memory:");
+        await _connection.OpenAsync();
+
+        ServiceCollection services = new();
+        services.AddSingleton<Recorder>();
+        services.AddDbContext<TContext>((serviceProvider, options) => options
+            .UseSqlite(_connection)
+            .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
+
+        configure(services);
+
+        _provider = services.BuildServiceProvider();
+
+        using IServiceScope scope = _provider.CreateScope();
+        await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync();
+    }
+
+    internal Recorder Recorder => Resolve<Recorder>();
+
+    internal IServiceScope CreateScope() => Provider.CreateScope();
+
+    private ServiceProvider Provider =>
+        _provider ?? throw new InvalidOperationException("The host was used before it was initialised.");
+
+    private protected T Resolve<T>()
+        where T : notnull => Provider.GetRequiredService<T>();
+
+    public async ValueTask DisposeAsync()
+    {
+        if (_provider is not null)
+        {
+            await _provider.DisposeAsync();
+        }
+
+        if (_connection is not null)
+        {
+            await _connection.DisposeAsync();
+        }
+
+        GC.SuppressFinalize(this);
+    }
+}
+
+/// <summary>Records what handlers did, through the container rather than static state.</summary>
+internal sealed class Recorder
+{
+    private readonly List<string> _handled = [];
+
+    internal IReadOnlyList<string> Handled
+    {
+        get
+        {
+            lock (_handled)
+            {
+                return [.. _handled];
+            }
+        }
+    }
+
+    internal void Record(string what)
+    {
+        lock (_handled)
+        {
+            _handled.Add(what);
+        }
+    }
+}
