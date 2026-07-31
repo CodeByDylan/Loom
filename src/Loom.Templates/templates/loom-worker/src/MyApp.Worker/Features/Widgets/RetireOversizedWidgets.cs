@@ -5,6 +5,7 @@ using Loom.Results;
 using Microsoft.EntityFrameworkCore;
 using MyApp.Domain.Widgets;
 using MyApp.Worker.Infrastructure;
+using MyApp.Worker.Workers;
 using Npgsql;
 
 namespace MyApp.Worker.Features.Widgets.RetireOversizedWidgets;
@@ -21,7 +22,7 @@ internal sealed class Validator : AbstractValidator<Request>
     public Validator()
     {
         RuleFor(request => request.LargerThan).GreaterThan(0);
-        RuleFor(request => request.BatchSize).InclusiveBetween(1, 10_000);
+        RuleFor(request => request.BatchSize).InclusiveBetween(1, RetireWidgetsOptions.LargestBatch);
     }
 }
 
