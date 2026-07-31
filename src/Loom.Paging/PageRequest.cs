@@ -56,6 +56,11 @@ public sealed record PageRequest
     /// <summary>Gets how many items precede this page.</summary>
     public int Skip => (Number - 1) * Size;
 
-    /// <summary>Gets the first page, at the default size.</summary>
+    /// <summary>Gets the first page, at the largest size allowed.</summary>
+    /// <remarks>
+    /// The largest, not a smaller default: a caller reaching for this has expressed no opinion about
+    /// size, and inventing one would be a second number to keep in step with <see cref="DefaultMaximumSize" />.
+    /// State a size when you want fewer.
+    /// </remarks>
     public static PageRequest First => new(number: 1, size: DefaultMaximumSize);
 }
