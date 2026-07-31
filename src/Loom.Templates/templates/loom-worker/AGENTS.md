@@ -191,7 +191,7 @@ Applies to `src/MyApp.Worker/`.
 - **`BackgroundService` + `PeriodicTimer`.** No scheduling framework by default — most workers are "every N minutes" or "drain this," and the BCL does both with no dependencies.
 - **Escalate to Quartz.NET only for a stated need:** cron expressions, clustering, or persistent job state. Adding it speculatively buys a database table and a configuration surface you do not want.
 - **Hangfire is out.** `Hangfire.Core` is LGPL v3, which is a licence to adopt deliberately rather than inherit, and its Pro tier is paid. Its dashboard was compensating for missing observability, which Aspire already provides.
-- **`ExecuteAsync` contains no business logic.** It is a loop that resolves a scope and dispatches to a handler — exactly the position an endpoint occupies in the API archetype.
+- **`ExecuteAsync` contains no business logic.** It ticks, runs one pass, and refuses to let a failure end the loop. Resolving a scope and dispatching to a handler happens a level down in `RunOnceAsync` — that is the position an endpoint occupies in the API archetype, and keeping the two apart is what makes either testable without the other.
 
 ```csharp
 internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimeProvider clock)
