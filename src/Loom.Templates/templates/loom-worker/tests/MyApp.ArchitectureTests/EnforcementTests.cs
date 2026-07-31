@@ -91,6 +91,13 @@ public sealed class EnforcementTests
             return false;
         }
 
+        // An array is not generic and its base chain runs to Array, so without this a Widget[] on a
+        // contract would go unnoticed.
+        if (type.IsArray)
+        {
+            return NamesAnEntity(type.GetElementType()!);
+        }
+
         if (type.IsGenericType && type.GetGenericArguments().Any(NamesAnEntity))
         {
             return true;
