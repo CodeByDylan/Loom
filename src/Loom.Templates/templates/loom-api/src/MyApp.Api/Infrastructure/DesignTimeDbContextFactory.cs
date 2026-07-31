@@ -12,7 +12,7 @@ namespace MyApp.Api.Infrastructure;
 /// </remarks>
 internal sealed class DesignTimeDbContextFactory : IDesignTimeDbContextFactory<AppDbContext>
 {
-    public AppDbContext CreateDbContext(string[] args)
+    AppDbContext IDesignTimeDbContextFactory<AppDbContext>.CreateDbContext(string[] args)
     {
         DbContextOptionsBuilder<AppDbContext> builder = new();
         builder.UseNpgsql("Host=design-time;Database=designtime;Username=none;Password=none");

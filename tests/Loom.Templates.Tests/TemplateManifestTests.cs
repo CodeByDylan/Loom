@@ -33,7 +33,7 @@ public sealed class TemplateManifestTests
     {
         JsonElement manifest = await ReadManifestAsync(template);
 
-        foreach (string member in (string[])["identity", "name", "shortName", "sourceName"])
+        foreach (string member in (string[])["identity", "name", "shortName"])
         {
             await Assert.That(manifest.TryGetProperty(member, out JsonElement value) &&
                 value.ValueKind is JsonValueKind.String &&
@@ -53,12 +53,22 @@ public sealed class TemplateManifestTests
 
     [Test]
     [MethodDataSource(nameof(Templates))]
-    public async Task The_Source_Name_Occurs_In_The_Content_It_Renames(string template)
+    public async Task Exactly_One_Symbol_Renames_Files(string template)
     {
         JsonElement manifest = await ReadManifestAsync(template);
-        string sourceName = manifest.GetProperty("sourceName").GetString()!;
 
-        await Assert.That(await OccurrencesAsync(template, sourceName)).IsGreaterThan(0);
+        string[] renamers =
+        [
+            .. manifest.GetProperty("symbols").EnumerateObject()
+                .Where(symbol => symbol.Value.TryGetProperty("fileRename", out _))
+                .Select(symbol => symbol.Name),
+        ];
+
+        // The token is renamed and replaced by one symbol rather than by sourceName, so that paths and
+        // file contents get the same sanitised value. A name like "My-App" is a valid directory and an
+        // invalid identifier; two mechanisms would disagree about which to write where.
+        await Assert.That(renamers.Length).IsEqualTo(1);
+        await Assert.That(manifest.TryGetProperty("sourceName", out _)).IsFalse();
     }
 
     [Test]
