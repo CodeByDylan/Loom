@@ -34,8 +34,7 @@ internal sealed partial class RetireWidgetsPass(
                 .GetRequiredService<IHandler<Request, Response>>();
 
             Result<Response> result = await handler
-                .HandleAsync(new Request(_options.LargerThan, _options.BatchSize), cancellationToken)
-                .ConfigureAwait(false);
+                .HandleAsync(new Request(_options.LargerThan, _options.BatchSize), cancellationToken);
 
             if (result.IsSuccess)
             {
@@ -66,7 +65,7 @@ internal sealed partial class RetireWidgetsPass(
                 return;
             }
 
-            await Task.Delay(Backoff(attempt), clock, cancellationToken).ConfigureAwait(false);
+            await Task.Delay(Backoff(attempt), clock, cancellationToken);
         }
     }
 
