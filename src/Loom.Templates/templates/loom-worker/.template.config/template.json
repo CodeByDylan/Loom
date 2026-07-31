@@ -1,16 +1,32 @@
 {
   "$schema": "https://json.schemastore.org/template",
   "author": "Dylan de Beer",
-  "classifications": [ "Worker", "Service", "Solution", "Loom" ],
+  "classifications": [
+    "Worker",
+    "Service",
+    "Solution",
+    "Loom"
+  ],
   "identity": "CodeByDylan.Loom.Worker.CSharp",
   "name": "Loom background worker solution",
   "shortName": "loom-worker",
   "description": "A solution built on Loom: a pure domain, a background worker of vertical slices, Aspire orchestration, and the guidance for working in it already assembled into AGENTS.md.",
-  "tags": { "language": "C#", "type": "solution" },
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
   "sourceName": "MyApp",
   "preferNameDirectory": true,
   "defaultName": "MyApp",
   "symbols": {
+    "userSecretsId": {
+      "type": "generated",
+      "generator": "guid",
+      "replaces": "9f2a6c1e-0000-0000-0000-000000000001",
+      "parameters": {
+        "format": "D"
+      }
+    },
     "hostProjectClass": {
       "type": "generated",
       "generator": "regex",
@@ -18,7 +34,12 @@
       "replaces": "HostProject",
       "parameters": {
         "source": "name",
-        "steps": [ { "regex": "\\.", "replacement": "_" } ]
+        "steps": [
+          {
+            "regex": "\\.",
+            "replacement": "_"
+          }
+        ]
       }
     },
     "skipRestore": {
@@ -34,7 +55,11 @@
       "id": "restore",
       "condition": "(!skipRestore)",
       "description": "Restoring the solution.",
-      "manualInstructions": [ { "text": "Run 'dotnet restore'." } ],
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet restore'."
+        }
+      ],
       "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
       "continueOnError": true
     }
