@@ -34,6 +34,8 @@ internal static class WorkerServices
 
         services.AddLoomPersistence();
 
+        services.AddSingleton<RetireWidgetsPass>();
+
         // Declared once and applied to every handler, so a slice cannot be registered without
         // validation by forgetting a call. Declaration order is nesting order.
         services

@@ -1,20 +1,16 @@
-using Loom.Handlers;
-using Loom.Results;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
-using MyApp.Worker.Features.Widgets.RetireOversizedWidgets;
 
 namespace MyApp.Worker.Workers;
 
 /// <summary>
-/// Runs one slice on a schedule.
+/// Runs one pass on a schedule.
 /// </summary>
 /// <remarks>
-/// The loop holds no business logic. It occupies exactly the position an endpoint does in an API: it
-/// decides when to dispatch, and what a failure means for the schedule, and nothing else.
+/// Holds no business logic and no decision about outcomes — that is <see cref="RetireWidgetsPass" />.
+/// What is left is the schedule and one guarantee: a failed pass must not end the loop.
 /// </remarks>
 internal sealed partial class RetireWidgetsWorker(
-    IServiceScopeFactory scopes,
+    RetireWidgetsPass pass,
     TimeProvider clock,
     IOptions<RetireWidgetsOptions> options,
     ILogger<RetireWidgetsWorker> logger)
@@ -22,88 +18,39 @@ internal sealed partial class RetireWidgetsWorker(
 {
     private readonly RetireWidgetsOptions _options = options.Value;
 
-    /// <summary>How many times a transient failure is retried before the iteration is abandoned.</summary>
-    /// <remarks>
-    /// Bounded on purpose. Unbounded retry against a permanent failure is an outage with extra steps,
-    /// and the next tick will try again anyway.
-    /// </remarks>
-    internal const int MaximumAttempts = 3;
-
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
         using PeriodicTimer timer = new(_options.Interval, clock);
 
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
-            try
-            {
-                await RunOnceAsync(stoppingToken).ConfigureAwait(false);
-            }
-            catch (Exception exception)
-                when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
-            {
-                // A failed iteration must not kill the worker: an exception leaving ExecuteAsync stops
-                // the service, and in some hosting models it does so silently.
-                //
-                // Cancellation is only fatal when shutdown asked for it. A timeout inside the iteration
-                // also surfaces as OperationCanceledException, and treating that as shutdown would stop
-                // the worker for good over one slow query.
-                Failed(logger, exception);
-            }
+            await RunGuardedAsync(stoppingToken).ConfigureAwait(false);
         }
     }
 
-    private async Task RunOnceAsync(CancellationToken cancellationToken)
+    /// <summary>Runs one pass and refuses to let it end the loop.</summary>
+    /// <remarks>
+    /// Separate from <see cref="ExecuteAsync" /> so it can be called directly. This is the worker's
+    /// only real behaviour, and reaching it through the timer would mean driving a hosted service from
+    /// a fake clock — which is a test of <c>PeriodicTimer</c> rather than of this.
+    /// </remarks>
+    internal async Task RunGuardedAsync(CancellationToken stoppingToken)
     {
-        for (int attempt = 1; attempt <= MaximumAttempts; attempt++)
+        try
         {
-            // A scope per iteration, never one held across them. A DbContext kept between iterations
-            // accumulates tracked entities and eventually answers from a stale graph.
-            await using AsyncServiceScope scope = scopes.CreateAsyncScope();
-
-            IHandler<Request, Response> handler = scope.ServiceProvider
-                .GetRequiredService<IHandler<Request, Response>>();
-
-            Result<Response> result = await handler
-                .HandleAsync(new Request(_options.LargerThan, _options.BatchSize), cancellationToken)
-                .ConfigureAwait(false);
-
-            if (result.IsSuccess)
-            {
-                Retired(logger, result.Value.Retired);
-                return;
-            }
-
-            // The category decides what happens next, which is the same decision a status code
-            // expresses at an HTTP boundary. Only a dependency that might recover is worth retrying;
-            // anything the caller got wrong will be just as wrong next time.
-            if (result.Error.Category is not ErrorCategory.Unavailable)
-            {
-                DeadLettered(logger, result.Error.Code, result.Error.Message);
-                return;
-            }
-
-            if (attempt == MaximumAttempts)
-            {
-                GaveUp(logger, MaximumAttempts, result.Error.Code);
-                return;
-            }
-
-            await Task.Delay(Backoff(attempt), clock, cancellationToken).ConfigureAwait(false);
+            await pass.RunAsync(stoppingToken).ConfigureAwait(false);
+        }
+        catch (Exception exception)
+            when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
+        {
+            // An exception leaving ExecuteAsync stops the service, and in some hosting models it does
+            // so silently. Cancellation is only fatal when shutdown asked for it: a timeout inside a
+            // pass also surfaces as OperationCanceledException, and treating that as shutdown would
+            // stop the worker for good over one slow query.
+            Failed(logger, exception);
         }
     }
 
-    private static TimeSpan Backoff(int attempt) => TimeSpan.FromSeconds(Math.Pow(2, attempt));
-
-    [LoggerMessage(Level = LogLevel.Information, Message = "Retired {Count} widget(s).")]
-    private static partial void Retired(ILogger logger, int count);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Iteration abandoned: {Code} {Reason}")]
-    private static partial void DeadLettered(ILogger logger, string code, string reason);
-
-    [LoggerMessage(Level = LogLevel.Warning, Message = "Gave up after {Attempts} attempts: {Code}")]
-    private static partial void GaveUp(ILogger logger, int attempts, string code);
-
-    [LoggerMessage(Level = LogLevel.Error, Message = "The iteration threw and was swallowed to keep the worker alive.")]
+    [LoggerMessage(Level = LogLevel.Error, Message = "A pass threw and was swallowed to keep the worker alive.")]
     private static partial void Failed(ILogger logger, Exception exception);
 }

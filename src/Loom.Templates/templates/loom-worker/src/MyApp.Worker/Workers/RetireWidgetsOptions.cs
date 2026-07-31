@@ -23,6 +23,11 @@ internal sealed class RetireWidgetsOptions
     [Range(1, int.MaxValue)]
     public int LargerThan { get; init; } = 100;
 
+    /// <summary>Gets the base wait before a transient failure is retried, doubling per attempt.</summary>
+    /// <remarks>Zero disables waiting, which is what a test wants and a deployment never does.</remarks>
+    [Range(typeof(TimeSpan), "00:00:00", "00:05:00")]
+    public TimeSpan RetryBackoff { get; init; } = TimeSpan.FromSeconds(2);
+
     /// <summary>Gets how many widgets one pass may retire.</summary>
     /// <remarks>
     /// Bounded so a backlog is worked through over several ticks instead of loading every matching row
