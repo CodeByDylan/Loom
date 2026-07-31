@@ -27,10 +27,19 @@ internal static class EndpointExtensions
         foreach (Type type in assembly.GetTypes().Where(candidate =>
             candidate is { IsAbstract: false, IsInterface: false } && candidate.IsAssignableTo(typeof(IEndpoint))))
         {
-            // Not null-forgiving: an explicitly implemented Map has no public static method to find,
-            // and skipping it would register nothing while looking like it worked — the failure this
-            // whole interface exists to avoid.
-            MethodInfo map = type.GetMethod(nameof(IEndpoint.Map))
+            // By signature, not by name alone: a slice that also declares another public static Map —
+            // an overload taking its own group builder, say — makes a name-only lookup ambiguous, and
+            // GetMethod throws rather than picking one.
+            //
+            // Not null-forgiving either: an explicitly implemented Map has no public static method to
+            // find, and skipping it would register nothing while looking like it worked — the failure
+            // this whole interface exists to avoid.
+            MethodInfo map = type.GetMethod(
+                    nameof(IEndpoint.Map),
+                    BindingFlags.Public | BindingFlags.Static,
+                    binder: null,
+                    types: [typeof(IEndpointRouteBuilder)],
+                    modifiers: null)
                 ?? throw new InvalidOperationException(
                     $"{type.Name} implements IEndpoint but exposes no public static Map. Implement it "
                     + "implicitly; an explicit implementation cannot be discovered.");
