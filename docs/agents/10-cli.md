@@ -30,6 +30,11 @@ internal static class ReconcileCommand
 ### Output and exit codes
 
 - **Exit codes come from the `Loom.Results` category**, mapped in one place, the same way `ToHttpResult()` works in the API: `0` success, `1` unexpected failure, and a stable code per category. Never `Environment.Exit` from inside a handler.
+
+> **Not shipped yet:** no package provides `ToExitCode()` today — it arrives with the `loom-cli`
+> archetype (see the roadmap). Until it does, this archetype cannot satisfy the rule that
+> category-to-transport mapping comes from a Loom package, which is one reason the archetype does
+> not exist yet either. Do not write the mapping inline to bridge the gap.
 - **Human output on stdout, diagnostics on stderr.** A CLI whose logs pollute stdout cannot be piped.
 - **Machine-readable output is opt-in** via `--json`, and when requested it is the *only* thing on stdout. No banners, no progress bars, no colour.
 - **Respect `NO_COLOR` and non-interactive terminals.** Detect redirected output and drop styling.
