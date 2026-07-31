@@ -14,7 +14,7 @@ namespace MyApp.Api.Features.Widgets;
 /// </remarks>
 internal sealed class WidgetConfiguration : IEntityTypeConfiguration<Widget>
 {
-    public void Configure(EntityTypeBuilder<Widget> builder)
+    void IEntityTypeConfiguration<Widget>.Configure(EntityTypeBuilder<Widget> builder)
     {
         ArgumentNullException.ThrowIfNull(builder);
 

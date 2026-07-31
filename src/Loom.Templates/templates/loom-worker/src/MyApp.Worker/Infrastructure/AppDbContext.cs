@@ -9,6 +9,7 @@ namespace MyApp.Worker.Infrastructure;
 /// </summary>
 public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
+    /// <summary>Gets the widgets. Only aggregate roots get a set of their own.</summary>
     public DbSet<Widget> Widgets => Set<Widget>();
 
     // Conventions, not model creation. Property discovery skips types it does not recognise, so an
