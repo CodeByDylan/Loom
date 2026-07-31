@@ -38,7 +38,10 @@ builder.Services
         MyApp.Api.Features.Widgets.CreateWidget.Response>()
     .AddHandler<MyApp.Api.Features.Widgets.GetWidget.Handler,
         MyApp.Api.Features.Widgets.GetWidget.Request,
-        MyApp.Api.Features.Widgets.GetWidget.Response>();
+        MyApp.Api.Features.Widgets.GetWidget.Response>()
+    .AddHandler<MyApp.Api.Features.Widgets.ListWidgets.Handler,
+        MyApp.Api.Features.Widgets.ListWidgets.Request,
+        Loom.Paging.Page<MyApp.Api.Features.Widgets.ListWidgets.Response>>();
 
 // includeInternalTypes matters: slice validators are internal, and without it none are registered.
 // The validating decorator treats a missing validator as nothing to validate, so the omission would
