@@ -20,7 +20,7 @@ internal interface IEndpoint
 internal static class EndpointExtensions
 {
     /// <summary>Finds and maps every endpoint the assembly declares.</summary>
-    public static void MapEndpoints(this IEndpointRouteBuilder routes, System.Reflection.Assembly assembly)
+    public static void MapEndpoints(this IEndpointRouteBuilder routes, Assembly assembly)
     {
         ArgumentNullException.ThrowIfNull(assembly);
 
