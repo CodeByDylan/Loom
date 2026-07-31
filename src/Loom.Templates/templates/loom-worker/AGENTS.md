@@ -137,6 +137,11 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 > **UNDECIDED:** Which identity provider issues tokens. Driven by the deployment environment,
 > so the template does not choose. ASP.NET Core Identity is out of scope — self-hosting
 > accounts, resets, and MFA is a project-defining decision, not a default.
+>
+> The routes are already closed: endpoints map into a group carrying `RequireAuthorization()`, and
+> **no authentication scheme is registered until you add one**. Any endpoint that does not
+> `AllowAnonymous()` will fault rather than refuse until that is done. Register the scheme first,
+> then remove the opt-outs from the example slices.
 
 ## 9. Observability
 
