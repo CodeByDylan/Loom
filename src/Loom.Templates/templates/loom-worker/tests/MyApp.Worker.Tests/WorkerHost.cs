@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using MyApp.Worker.Infrastructure;
 using Npgsql;
@@ -44,7 +45,9 @@ public sealed class WorkerHost : IAsyncDisposable
         // unregistered validator — and still pass.
         ServiceCollection services = new();
         services.AddLogging();
-        services.AddWorkerServices(container.GetConnectionString());
+        services.AddWorkerServices(
+            container.GetConnectionString(),
+            new ConfigurationBuilder().AddInMemoryCollection([]).Build());
 
         ServiceProvider provider = services.BuildServiceProvider();
 
