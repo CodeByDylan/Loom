@@ -44,7 +44,7 @@ per-area virtual folders — virtual structure and disk structure are allowed to
 4. **`UNDECIDED` means stop and ask.** Do not resolve the question yourself, and do not silently pick a convention.
 5. **Never edit this file to resolve a conflict between a rule and your code.** If a rule blocks you, say so.
 6. **Run the §3 verify block before claiming done.** CI runs the same block; a green claim over a red build is a lie.
-7. **Never create a git tag, never `dotnet nuget push`.** Releasing is a human action.
+7. **Never create a git tag or `dotnet nuget push` on your own initiative** — only when the user asks for it in that session, and never to "finish" work you think is ready. Releasing is a decision, and a published version can never be replaced. Preparing a release is yours; causing one is not.
 
 ## 3. Build and verify
 
