@@ -42,7 +42,7 @@ builder.Services
 
 // includeInternalTypes matters: slice validators are internal, and without it none are registered.
 // The validating decorator treats a missing validator as nothing to validate, so the omission would
-// be silent — which is why ValidatorRegistrationTests asserts every validator is resolvable.
+// be silent — which is why RegistrationTests asserts every validator is resolvable.
 builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Scoped, includeInternalTypes: true);
 
 builder.Services.AddProblemDetails();
