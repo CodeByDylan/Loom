@@ -70,7 +70,7 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 ## 4. Architecture
 
 - **One file per operation:** `Features/<Aggregate>/<Operation>.cs`.
-- **One namespace per slice:** `namespace MyApp.Features.Orders.CreateOrder;`. This is what makes slice isolation mechanically enforceable (§11) rather than a review convention.
+- **One namespace per slice, rooted in the host project's namespace:** `namespace MyApp.Api.Features.Orders.CreateOrder;` in an API, `MyApp.Worker.Features…` in a worker. The root matters: the §11 enforcement watches `<HostAssembly>.Features.`, so a slice namespaced without the archetype segment sits outside the check that makes isolation mechanical rather than a review convention.
 - **A slice over ~250 lines means the operation is doing too much.** Split the operation, not the file. A genuine helper gets a sibling file in the same folder, never a new folder.
 - **`Features/<Aggregate>/_Shared.cs`** is the only permitted cross-slice sharing, and only within one aggregate.
 - **Entry points are thin adapters.** An endpoint, a `BackgroundService`, or a CLI command validates nothing, decides nothing, and queries nothing — it adapts input and dispatches to a handler.
@@ -177,7 +177,7 @@ rule to this file, add its test.
 
 ## 12. Adding a slice
 
-1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace MyApp.Features.<Aggregate>.<Operation>;`.
+1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace <HostProject>.Features.<Aggregate>.<Operation>;` — `MyApp.Api.Features.Orders.CreateOrder`, not `MyApp.Features…` (§4).
 2. Write the request, the response, the validator, and the handler in that file.
 3. Register the handler and its decorator chain.
 4. Wire the entry point (see the archetype section below).
