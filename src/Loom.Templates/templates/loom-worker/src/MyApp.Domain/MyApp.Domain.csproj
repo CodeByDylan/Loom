@@ -1,0 +1,12 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+    <!-- The one boundary enforced at compile time. Loom packages and the base class library only:
+         no EF Core, no ASP.NET Core, no FluentValidation. An architecture test asserts it too, but a
+         missing reference fails faster than a failing test. -->
+    <ItemGroup>
+        <PackageReference Include="CodeByDylan.Loom.Results" />
+        <PackageReference Include="CodeByDylan.Loom.Entities" />
+        <PackageReference Include="CodeByDylan.Loom.Specifications" />
+    </ItemGroup>
+
+</Project>

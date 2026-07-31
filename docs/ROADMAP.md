@@ -8,9 +8,48 @@ outgrown this file.
 
 | Package | Tier | Why |
 | --- | --- | --- |
-| `Loom.Templates` | n/a | `dotnet new` templates that scaffold a solution and assemble its `AGENTS.md` from `docs/agents/`. Replaces `scripts/new-agents-md.sh`. |
+| `loom-cli` template | n/a | The last archetype. Needs `System.CommandLine` and a category-to-exit-code mapping that no package provides yet. |
 
 ## Built
+
+`loom-worker` followed, so two of the three archetypes exist. Its schedule is tested by advancing a
+fake clock rather than sleeping, and building it exposed two defects in that test harness worth
+recording: asserting one dispatch hid the fact that the loop only ever ran once, and `PeriodicTimer`
+coalesces ticks, so advancing a fake clock in a tight burst collapses every tick into a single
+iteration. Both tests now require a second dispatch, which is what actually proves the loop survived
+the first.
+
+The worker has no equivalent of `ToHttpResult()`. Its category-to-disposition mapping — retry, dead
+letter, log once — lives in `RunOnceAsync`, alongside the scope it resolves and the handler it
+dispatches to; `ExecuteAsync` above it only schedules and keeps the loop alive. If a second worker project
+ever wants the same mapping, that is the moment to consider a package for it, not before.
+
+`Loom.Templates` ships **two archetypes**, `loom-api` and `loom-worker`; `loom-cli` remains planned.
+
+The API went first because it was the only one with a reference implementation: `samples/Ordering`
+builds, runs and had already had four defects shaken out of it, so that template was derived from
+something proven rather than invented to match a document. The worker followed without one, which is
+why its own tests carry the weight instead — the pass and one guarded iteration are asserted directly,
+with no clock and no timer.
+
+The CLI still has neither a reference implementation nor a category-to-exit-code mapping in any package,
+and inventing structure inside a package whose entire purpose is that people copy it unexamined is how a
+guess becomes everyone's convention.
+
+So `scripts/new-agents-md.sh` survives. This entry originally said the templates replace it; that is not
+true while `loom-cli` still needs it, and it stays until that archetype exists.
+
+The `AGENTS.md` is assembled at pack time rather than at scaffold time, and the assembled copy is
+committed so the package content is exactly what the repository shows. `check-docs.sh` regenerates it and
+fails if it has drifted, because a template that ships stale guidance is worse than one that ships none.
+
+Building it turned up three defects that no Loom test could have caught, because they only exist in
+generated output: a `using` for a namespace that does not exist (`Loom.Results.AspNetCore` is a package
+identifier, not a namespace), an Aspire resource name derived from the project name and therefore
+invalid for any name containing a dot, and the class the Aspire SDK generates for a project reference,
+which turns dots into underscores and so cannot be produced by the template engine's name substitution
+alone. CI now scaffolds and builds a solution called `Acme.Billing` on every push — the dotted name is
+the case that breaks and the one people actually use.
 
 `Loom.Outbox.Diagnostics` shipped as `OutboxAdministration<TContext>` **inside
 `Loom.Persistence.EntityFrameworkCore`**, for the same reason as the logging decorator: it needs the

@@ -1,0 +1,21 @@
+<Solution>
+  <Folder Name="/- Solution Items/">
+    <File Path=".editorconfig" />
+    <File Path=".gitignore" />
+    <File Path="AGENTS.md" />
+    <File Path="Directory.Build.props" />
+    <File Path="Directory.Packages.props" />
+    <File Path="global.json" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/MyApp.Domain/MyApp.Domain.csproj" />
+    <Project Path="src/MyApp.Api/MyApp.Api.csproj" />
+    <Project Path="src/MyApp.AppHost/MyApp.AppHost.csproj" />
+    <Project Path="src/MyApp.ServiceDefaults/MyApp.ServiceDefaults.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/MyApp.Domain.Tests/MyApp.Domain.Tests.csproj" />
+    <Project Path="tests/MyApp.Api.Tests/MyApp.Api.Tests.csproj" />
+    <Project Path="tests/MyApp.ArchitectureTests/MyApp.ArchitectureTests.csproj" />
+  </Folder>
+</Solution>

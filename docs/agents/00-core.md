@@ -8,7 +8,7 @@ is yours now. Edit it freely.
 
 ## 1. Orientation
 
-```
+```text
 src/MyApp.Domain/            pure domain; Loom packages + BCL only
 src/MyApp.<Archetype>/       host; every slice lives here
 src/MyApp.AppHost/           Aspire orchestration; dev-time only, ships nothing
@@ -27,7 +27,7 @@ A **slice** is one operation. One file, one namespace, holding its request, resp
 handler, and entry point together.
 
 **The stack.** Versions live in `Directory.Packages.props`, never here and never in a `.csproj`.
-Loom packages install as `CodeByDylan.<name>`; the identifier is prefixed, the namespace named below is not.
+Loom packages install under their full identifier, `CodeByDylan.Loom.<name>`; the namespace named below drops the `CodeByDylan.` prefix.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
@@ -130,7 +130,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 - **Typed options only.** One `<Concern>Options` class per concern with a `const string SectionName`.
 - **Validate at startup:** `.ValidateDataAnnotations().ValidateOnStart()`. A misconfigured app must fail to boot, not fail on the first request that touches the bad setting.
-- **`IConfiguration` appears only in `Program.cs`.** Injecting it anywhere else is a defect.
+- **`IConfiguration` is read only in the composition root** — `Program.cs`, and the startup extensions it calls on the builder, such as `ServiceDefaults`. **Never inject it into a type resolved from the container**; bind a typed options class and inject that. The distinction is what the rule protects: reading a value while composing the application is composition, whereas a service reaching for configuration at run time hides a dependency the constructor does not declare.
 - **Secrets:** user-secrets locally, environment variables when deployed. Never in `appsettings*.json`, including `Development`.
 - **Authorization policies are named constants** in a `Policies` static class. No inline role or claim strings at call sites.
 - **Authorization that depends on domain state belongs in the handler**, returning a `Forbidden` error. "Can this user cancel *this* order" needs the order, so it cannot be an attribute.
@@ -138,6 +138,11 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 > **UNDECIDED:** Which identity provider issues tokens. Driven by the deployment environment,
 > so the template does not choose. ASP.NET Core Identity is out of scope — self-hosting
 > accounts, resets, and MFA is a project-defining decision, not a default.
+>
+> The routes are already closed: endpoints map into a group carrying `RequireAuthorization()`, and
+> **no authentication scheme is registered until you add one**. Any endpoint that does not
+> `AllowAnonymous()` will fault rather than refuse until that is done. Register the scheme first,
+> then remove the opt-outs from the example slices.
 
 ## 9. Observability
 
@@ -161,7 +166,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 1. `Domain` references nothing but Loom packages and the BCL.
 2. No slice namespace depends on another slice namespace.
 3. Domain entities appear in no request or response type's public surface.
-4. `IConfiguration` is referenced only from `Program.cs`.
+4. `IConfiguration` is a constructor parameter of no type — it is read in the composition root or not at all.
 5. Every `IHandler<,>` implementation has a matching DI registration.
 
 A structural rule that is not in this list is a rule that will erode. If you add a structural

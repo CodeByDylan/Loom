@@ -1,0 +1,90 @@
+{
+  "$schema": "https://json.schemastore.org/template",
+  "author": "Dylan de Beer",
+  "classifications": [
+    "Web",
+    "WebAPI",
+    "Solution",
+    "Loom"
+  ],
+  "identity": "CodeByDylan.Loom.Api.CSharp",
+  "name": "Loom HTTP API solution",
+  "shortName": "loom-api",
+  "description": "A solution built on Loom: a pure domain, one host of vertical slices, Aspire orchestration, and the guidance for working in it already assembled into AGENTS.md.",
+  "tags": {
+    "language": "C#",
+    "type": "solution"
+  },
+  "preferNameDirectory": true,
+  "defaultName": "MyApp",
+  "symbols": {
+    "safeName": {
+      "type": "generated",
+      "generator": "regex",
+      "dataType": "string",
+      "replaces": "MyApp",
+      "fileRename": "MyApp",
+      "parameters": {
+        "source": "name",
+        "steps": [
+          {
+            "regex": "[^A-Za-z0-9_.]",
+            "replacement": "_"
+          },
+          {
+            "regex": "(^|\\.)([0-9])",
+            "replacement": "$1_$2"
+          }
+        ]
+      }
+    },
+    "userSecretsId": {
+      "type": "generated",
+      "generator": "guid",
+      "replaces": "9f2a6c1e-0000-0000-0000-000000000001",
+      "parameters": {
+        "format": "D"
+      }
+    },
+    "hostProjectClass": {
+      "type": "generated",
+      "generator": "regex",
+      "dataType": "string",
+      "replaces": "HostProject",
+      "parameters": {
+        "source": "name",
+        "steps": [
+          {
+            "regex": "[^A-Za-z0-9_]",
+            "replacement": "_"
+          },
+          {
+            "regex": "^([0-9])",
+            "replacement": "_$1"
+          }
+        ]
+      }
+    },
+    "skipRestore": {
+      "type": "parameter",
+      "datatype": "bool",
+      "defaultValue": "false",
+      "displayName": "Skip restore",
+      "description": "Do not run dotnet restore after the solution is created."
+    }
+  },
+  "postActions": [
+    {
+      "id": "restore",
+      "condition": "(!skipRestore)",
+      "description": "Restoring the solution.",
+      "manualInstructions": [
+        {
+          "text": "Run 'dotnet restore'."
+        }
+      ],
+      "actionId": "210D431B-A78B-4D2F-B762-4ED3E3EA9025",
+      "continueOnError": true
+    }
+  ]
+}

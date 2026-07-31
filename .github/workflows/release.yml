@@ -54,8 +54,11 @@ jobs:
       - run: dotnet build --no-restore --configuration Release
       - run: dotnet test --no-build --configuration Release
 
+      # PinTemplatesToPackageVersion rewrites the Loom version a scaffolded solution references to the
+      # version being released. Only here: an untagged build's packages are never published, so a
+      # template pinned to one could not restore, and CI scaffolds and builds one on every push.
       - name: Pack
-        run: dotnet pack --no-build --configuration Release --output artifacts
+        run: dotnet pack --no-build --configuration Release --output artifacts -p:PinTemplatesToPackageVersion=true
 
       # MinVer is configured, not magic: a wrong tag prefix or a shallow clone yields
       # 0.0.0-alpha.0.N instead of the tagged version, and pushing that would burn the version

@@ -20,6 +20,17 @@ Packages that exist today:
 | `Loom.Handlers.FluentValidation` | A decorator that validates requests before a handler runs, returning an `Invalid` failure. | Any validation rule of its own. |
 | `Loom.Persistence.EntityFrameworkCore` | The single EF Core seam: identity conversion, specification eager loading, `ToPageAsync`, domain event dispatch, an optional outbox with administration over it, and a decorator turning an abandoned save back into the failure that caused it. | A database provider — the consumer picks one. Cursor paging. Any endpoint, command or dashboard over the outbox. |
 
+`Loom.Templates` sits outside the tier table: it ships no assembly, only `dotnet new` content. Its
+`AGENTS.md` is generated from `docs/agents/` and committed — edit the fragments, then regenerate **every**
+template:
+
+```bash
+scripts/new-agents-md.sh --out src/Loom.Templates/templates/loom-api/AGENTS.md    api    --force
+scripts/new-agents-md.sh --out src/Loom.Templates/templates/loom-worker/AGENTS.md worker --force
+```
+
+`scripts/check-docs.sh` fails if you forget.
+
 Every package listed has code. There are no placeholder projects left.
 
 Layout: `src/Loom.<Name>/` and `tests/Loom.<Name>.Tests/`. The `.slnx` groups these into

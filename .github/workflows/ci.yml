@@ -55,3 +55,46 @@ jobs:
       - run: dotnet format samples/Loom.Samples.slnx --verify-no-changes
       - run: dotnet build  samples/Loom.Samples.slnx --no-restore
       - run: dotnet test   samples/Loom.Samples.slnx --no-build
+
+  # Scaffolds a solution from the template and builds it, against the published Loom packages rather
+  # than project references. Three defects reached the first template that only this catches: a using
+  # for a namespace that does not exist, an Aspire resource name invalid for any dotted project name,
+  # and a generated Projects class the template named wrongly. None of them fail the Loom build.
+  #
+  # The dotted name is deliberate. It is the case that breaks, and the one people actually use.
+  template:
+    runs-on: ubuntu-latest
+
+    # Every archetype, because they are separate trees: a fix applied to one is not applied to the
+    # other, and only building both notices.
+    strategy:
+      fail-fast: false
+      matrix:
+        archetype: [loom-api, loom-worker]
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+
+      - name: Pack the template
+        run: dotnet pack src/Loom.Templates --configuration Release --output artifacts/templates
+
+      - name: Install it
+        run: dotnet new install artifacts/templates/*.nupkg
+
+      - name: Scaffold a solution
+        run: dotnet new ${{ matrix.archetype }} --name Acme.Billing --output "$RUNNER_TEMP/scaffold/Acme.Billing"
+
+      - name: Build what it produced
+        working-directory: ${{ runner.temp }}/scaffold/Acme.Billing
+        run: dotnet build
+
+      - name: Test what it produced
+        working-directory: ${{ runner.temp }}/scaffold/Acme.Billing
+        run: dotnet test --no-build
