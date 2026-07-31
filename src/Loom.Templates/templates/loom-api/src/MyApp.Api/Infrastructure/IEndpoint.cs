@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace MyApp.Api.Infrastructure;
 
 /// <summary>
@@ -25,7 +27,15 @@ internal static class EndpointExtensions
         foreach (Type type in assembly.GetTypes().Where(candidate =>
             candidate is { IsAbstract: false, IsInterface: false } && candidate.IsAssignableTo(typeof(IEndpoint))))
         {
-            type.GetMethod(nameof(IEndpoint.Map))?.Invoke(null, [routes]);
+            // Not null-forgiving: an explicitly implemented Map has no public static method to find,
+            // and skipping it would register nothing while looking like it worked — the failure this
+            // whole interface exists to avoid.
+            MethodInfo map = type.GetMethod(nameof(IEndpoint.Map))
+                ?? throw new InvalidOperationException(
+                    $"{type.Name} implements IEndpoint but exposes no public static Map. Implement it "
+                    + "implicitly; an explicit implementation cannot be discovered.");
+
+            map.Invoke(null, [routes]);
         }
     }
 }
