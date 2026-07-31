@@ -11,6 +11,9 @@
         <PackageReference Include="CodeByDylan.Loom.Persistence.EntityFrameworkCore" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
+        <!-- A web host gets these from the shared framework; a worker asks for them. -->
+        <PackageReference Include="Microsoft.Extensions.Hosting" />
+        <PackageReference Include="Microsoft.Extensions.Options.DataAnnotations" />
         <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

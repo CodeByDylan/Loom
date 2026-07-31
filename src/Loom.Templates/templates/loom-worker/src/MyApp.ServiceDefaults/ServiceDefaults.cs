@@ -1,4 +1,3 @@
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Hosting;
@@ -76,11 +75,9 @@ public static class ServiceDefaults
 
         builder.Services.AddOpenTelemetry()
             .WithMetrics(metrics => metrics
-                .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation()
                 .AddRuntimeInstrumentation())
             .WithTracing(tracing => tracing
-                .AddAspNetCoreInstrumentation()
                 .AddHttpClientInstrumentation());
 
         if (!string.IsNullOrWhiteSpace(builder.Configuration["OTEL_EXPORTER_OTLP_ENDPOINT"]))
@@ -89,32 +86,5 @@ public static class ServiceDefaults
         }
 
         return builder;
-    }
-
-    /// <summary>
-    /// Maps the health endpoints, in Development only.
-    /// </summary>
-    /// <param name="app">The application to map onto.</param>
-    /// <returns>The same application, so calls can be chained.</returns>
-    /// <exception cref="ArgumentNullException"><paramref name="app" /> is <see langword="null" />.</exception>
-    /// <remarks>
-    /// Deliberately not mapped elsewhere: these endpoints are unauthenticated and describe the service's
-    /// internals, so exposing them in a deployment is a decision to make on purpose, with whatever
-    /// network restriction that deployment has.
-    /// </remarks>
-    public static WebApplication MapDefaultEndpoints(this WebApplication app)
-    {
-        ArgumentNullException.ThrowIfNull(app);
-
-        if (app.Environment.IsDevelopment())
-        {
-            app.MapHealthChecks("/health");
-            app.MapHealthChecks("/alive", new AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
-            {
-                Predicate = registration => registration.Tags.Contains("live"),
-            });
-        }
-
-        return app;
     }
 }

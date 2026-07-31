@@ -26,6 +26,7 @@
         <!-- At least 10.0.8: the Aspire host requires it, and central transitive pinning turns a lower
              pin into a downgrade error rather than a silent resolution. -->
         <PackageVersion Include="Microsoft.Extensions.Hosting" Version="10.0.8" />
+        <PackageVersion Include="Microsoft.Extensions.Options.DataAnnotations" Version="10.0.10" />
     </ItemGroup>
 
     <ItemGroup Label="Aspire">
@@ -33,8 +34,9 @@
         <PackageVersion Include="Aspire.Hosting.PostgreSQL" Version="13.4.6" />
         <PackageVersion Include="Microsoft.Extensions.ServiceDiscovery" Version="10.8.0" />
         <PackageVersion Include="Microsoft.Extensions.Http.Resilience" Version="10.8.0" />
+        <!-- Supplied by the ASP.NET Core shared framework in a web host; a worker has to ask for it. -->
+        <PackageVersion Include="Microsoft.Extensions.Diagnostics.HealthChecks" Version="10.0.10" />
         <PackageVersion Include="OpenTelemetry.Extensions.Hosting" Version="1.17.0" />
-        <PackageVersion Include="OpenTelemetry.Instrumentation.AspNetCore" Version="1.17.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Http" Version="1.17.0" />
         <PackageVersion Include="OpenTelemetry.Instrumentation.Runtime" Version="1.17.0" />
         <PackageVersion Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" Version="1.17.0" />
