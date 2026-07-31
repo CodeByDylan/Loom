@@ -20,7 +20,7 @@ iteration. Both tests now require a second dispatch, which is what actually prov
 the first.
 
 The worker has no equivalent of `ToHttpResult()`. Its category-to-disposition mapping — retry, dead
-letter, log once — lives in `RunOnceAsync`, alongside the scope it resolves and the handler it
+letter, log once — lives in the pass, alongside the scope it resolves and the handler it
 dispatches to; `ExecuteAsync` above it only schedules and keeps the loop alive. If a second worker project
 ever wants the same mapping, that is the moment to consider a package for it, not before.
 
