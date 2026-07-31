@@ -32,7 +32,7 @@ public sealed class RetireOversizedWidgetsTests
             await database.SaveChangesAsync();
         });
 
-        Result<Response> result = await DispatchAsync(new Request(LargerThan: 100));
+        Result<Response> result = await DispatchAsync(new Request(LargerThan: 100, BatchSize: 500));
 
         await Assert.That(result.IsSuccess).IsTrue();
         await Assert.That(result.Value.Retired).IsEqualTo(1);
@@ -53,8 +53,8 @@ public sealed class RetireOversizedWidgetsTests
             await database.SaveChangesAsync();
         });
 
-        Result<Response> first = await DispatchAsync(new Request(LargerThan: 100));
-        Result<Response> second = await DispatchAsync(new Request(LargerThan: 100));
+        Result<Response> first = await DispatchAsync(new Request(LargerThan: 100, BatchSize: 500));
+        Result<Response> second = await DispatchAsync(new Request(LargerThan: 100, BatchSize: 500));
 
         await Assert.That(first.Value.Retired).IsEqualTo(1);
 
@@ -68,10 +68,32 @@ public sealed class RetireOversizedWidgetsTests
     {
         // Rejected by the validator before the handler runs. The handler would happily accept it,
         // which is what makes this a test of the chain rather than of the query.
-        Result<Response> result = await DispatchAsync(new Request(LargerThan: 0));
+        Result<Response> result = await DispatchAsync(new Request(LargerThan: 0, BatchSize: 500));
 
         await Assert.That(result.IsFailure).IsTrue();
         await Assert.That(result.Error.Category).IsEqualTo(ErrorCategory.Invalid);
+    }
+
+    [Test]
+    public async Task A_Pass_Retires_At_Most_One_Batch()
+    {
+        await _host.InDatabaseAsync(async database =>
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                database.Widgets.Add(Widget.Create($"big-{i}", 500 + i).Value);
+            }
+
+            await database.SaveChangesAsync();
+        });
+
+        Result<Response> result = await DispatchAsync(new Request(LargerThan: 100, BatchSize: 2));
+
+        // Bounded, so a backlog is worked through over several ticks rather than loaded at once.
+        await Assert.That(result.Value.Retired).IsEqualTo(2);
+
+        await _host.InDatabaseAsync(async database =>
+            await Assert.That(await database.Widgets.CountAsync(widget => !widget.IsRetired)).IsEqualTo(3));
     }
 
     private async Task<Result<Response>> DispatchAsync(Request request)
