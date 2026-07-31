@@ -15,10 +15,29 @@
     "language": "C#",
     "type": "solution"
   },
-  "sourceName": "MyApp",
   "preferNameDirectory": true,
   "defaultName": "MyApp",
   "symbols": {
+    "safeName": {
+      "type": "generated",
+      "generator": "regex",
+      "dataType": "string",
+      "replaces": "MyApp",
+      "fileRename": "MyApp",
+      "parameters": {
+        "source": "name",
+        "steps": [
+          {
+            "regex": "[^A-Za-z0-9_.]",
+            "replacement": "_"
+          },
+          {
+            "regex": "(^|\\.)([0-9])",
+            "replacement": "$1_$2"
+          }
+        ]
+      }
+    },
     "userSecretsId": {
       "type": "generated",
       "generator": "guid",
@@ -38,6 +57,10 @@
           {
             "regex": "[^A-Za-z0-9_]",
             "replacement": "_"
+          },
+          {
+            "regex": "^([0-9])",
+            "replacement": "_$1"
           }
         ]
       }
