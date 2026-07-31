@@ -5,9 +5,13 @@ namespace Loom.Entities;
 /// </summary>
 /// <typeparam name="TSelf">The deriving aggregate type.</typeparam>
 /// <remarks>
-/// Loom collects domain events but does not dispatch them: dispatch needs a save-changes interceptor,
-/// which means an object-relational mapper, which is a lower tier than this package. Until that
-/// exists, events accumulate and a consumer drains them.
+/// This package collects domain events but does not dispatch them: dispatch needs a save-changes
+/// interceptor, which means an object-relational mapper, which is a higher tier than this one — and a
+/// package never references upwards. So events accumulate here and something above drains them.
+/// <para>
+/// <c>Loom.Persistence.EntityFrameworkCore</c> is what does, through its save-changes interceptor.
+/// Without it, a consumer drains the collection itself.
+/// </para>
 /// <para>
 /// Not sealed, for the same reason as <see cref="Entity{TSelf}" />.
 /// </para>
