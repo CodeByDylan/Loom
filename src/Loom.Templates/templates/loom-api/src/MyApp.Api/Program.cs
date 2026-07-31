@@ -47,12 +47,24 @@ builder.Services.AddValidatorsFromAssemblyContaining<Program>(ServiceLifetime.Sc
 
 builder.Services.AddProblemDetails();
 
+builder.Services.AddAuthorization();
+
 WebApplication app = builder.Build();
 
+app.UseAuthorization();
+
 app.MapDefaultEndpoints();
-app.MapEndpoints(typeof(Program).Assembly);
+
+// Every slice is mapped into a group that requires authorization, so the failure you get is "I forgot
+// to open this up" rather than the reverse. A slice opts out with AllowAnonymous, as both examples do.
+//
+// > **UNDECIDED:** which identity provider issues tokens. Until one is chosen no authentication scheme
+// > is registered, so an endpoint that does not opt out has nothing to authenticate against.
+app.MapGroup(string.Empty)
+    .RequireAuthorization()
+    .MapEndpoints(typeof(Program).Assembly);
 
 await app.RunAsync();
 
 // Exposed so the test host can reference this assembly through WebApplicationFactory<Program>.
-public partial class Program;
+public sealed partial class Program;
