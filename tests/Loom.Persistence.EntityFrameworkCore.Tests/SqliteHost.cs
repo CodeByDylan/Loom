@@ -28,13 +28,14 @@ internal abstract class SqliteHost : IAsyncDisposable
     private protected async Task InitialiseAsync<TContext>(Action<IServiceCollection> configure)
         where TContext : DbContext
     {
-        _connection = new SqliteConnection("Filename=:memory:");
-        await _connection.OpenAsync();
+        SqliteConnection connection = new("Filename=:memory:");
+        await connection.OpenAsync();
+        _connection = connection;
 
         ServiceCollection services = new();
         services.AddSingleton<Recorder>();
         services.AddDbContext<TContext>((serviceProvider, options) => options
-            .UseSqlite(_connection)
+            .UseSqlite(connection)
             .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
 
         configure(services);
