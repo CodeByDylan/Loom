@@ -79,13 +79,9 @@ public sealed class OutboxAdministration<TContext>(TContext context)
     /// </remarks>
     public async Task<bool> RetryAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        int changed = await context.Set<OutboxMessage>()
-            .Where(message => message.Id == id && message.Abandoned)
-            .ExecuteUpdateAsync(
-                update => update
-                    .SetProperty(message => message.Abandoned, false)
-                    .SetProperty(message => message.Attempts, 0),
-                cancellationToken);
+        int changed = await OfferAgainAsync(
+            context.Set<OutboxMessage>().Where(message => message.Id == id && message.Abandoned),
+            cancellationToken);
 
         return changed > 0;
     }
@@ -100,13 +96,9 @@ public sealed class OutboxAdministration<TContext>(TContext context)
     /// this does not turn into one enormous burst.
     /// </remarks>
     public Task<int> RetryAllAbandonedAsync(CancellationToken cancellationToken = default) =>
-        context.Set<OutboxMessage>()
-            .Where(message => message.Abandoned)
-            .ExecuteUpdateAsync(
-                update => update
-                    .SetProperty(message => message.Abandoned, false)
-                    .SetProperty(message => message.Attempts, 0),
-                cancellationToken);
+        OfferAgainAsync(
+            context.Set<OutboxMessage>().Where(message => message.Abandoned),
+            cancellationToken);
 
     /// <summary>
     /// Deletes messages that were delivered before the given moment.
@@ -128,4 +120,22 @@ public sealed class OutboxAdministration<TContext>(TContext context)
         context.Set<OutboxMessage>()
             .Where(message => message.DeliveredAt != null && message.DeliveredAt < deliveredBefore)
             .ExecuteDeleteAsync(cancellationToken);
+
+    /// <summary>Offers the matched messages to delivery again.</summary>
+    /// <param name="messages">The messages to offer again.</param>
+    /// <param name="cancellationToken">Cancels the operation.</param>
+    /// <returns>How many were offered again.</returns>
+    /// <remarks>
+    /// What a retry resets, written once so one path cannot drift from the other. The attempt count
+    /// goes back to zero or the next failure abandons the message immediately; the last error
+    /// deliberately stays, so a retry that then succeeds still shows the message once failed.
+    /// </remarks>
+    private static Task<int> OfferAgainAsync(
+        IQueryable<OutboxMessage> messages,
+        CancellationToken cancellationToken) =>
+        messages.ExecuteUpdateAsync(
+            update => update
+                .SetProperty(message => message.Abandoned, false)
+                .SetProperty(message => message.Attempts, 0),
+            cancellationToken);
 }
