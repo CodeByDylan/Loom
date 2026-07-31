@@ -15,22 +15,21 @@ public sealed class DomainPurityTests
     [Test]
     public async Task The_Domain_Depends_On_Nothing_But_Loom_And_The_Base_Class_Library()
     {
-        string[] forbidden =
+        // An allowlist, not a list of things to avoid. A denylist only refuses what someone thought to
+        // name — Dapper, Newtonsoft.Json and MediatR would all have passed one — so the rule is stated
+        // as what is permitted and everything else fails by default.
+        string[] offenders =
         [
-            "Microsoft.EntityFrameworkCore",
-            "Microsoft.AspNetCore",
-            "FluentValidation",
-            "Npgsql",
-            "Microsoft.Extensions.DependencyInjection",
+            .. Domain.GetReferencedAssemblies()
+                .Select(reference => reference.Name ?? string.Empty)
+                .Where(name => !name.StartsWith("Loom.", StringComparison.Ordinal)
+                    && !name.StartsWith("System.", StringComparison.Ordinal)
+                    && !name.Equals("System", StringComparison.Ordinal)
+                    && !name.Equals("netstandard", StringComparison.Ordinal)
+                    && !name.Equals("mscorlib", StringComparison.Ordinal)),
         ];
 
-        ArchTestResult result = Types.InAssembly(Domain)
-            .Should()
-            .NotHaveDependencyOnAny(forbidden)
-            .GetResult();
-
-        // Named, because "false" does not say which type reached for what.
-        await Assert.That(result.FailingTypeNames ?? []).IsEmpty();
+        await Assert.That(offenders).IsEmpty();
     }
 
     [Test]

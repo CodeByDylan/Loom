@@ -9,7 +9,7 @@ using MyApp.Domain.Widgets;
 
 namespace MyApp.Api.Features.Widgets.ListWidgets;
 
-internal sealed record Request(int LargerThan, int Number, int Size);
+internal sealed record Request(int LargerThan, int Number, int PageSize);
 
 internal sealed record Response(Guid WidgetId, string Name, int Size);
 
@@ -19,7 +19,7 @@ internal sealed class Validator : AbstractValidator<Request>
     {
         RuleFor(request => request.LargerThan).GreaterThanOrEqualTo(0);
         RuleFor(request => request.Number).GreaterThan(0);
-        RuleFor(request => request.Size).InclusiveBetween(1, PageRequest.DefaultMaximumSize);
+        RuleFor(request => request.PageSize).InclusiveBetween(1, PageRequest.DefaultMaximumSize);
     }
 }
 
@@ -36,7 +36,7 @@ internal sealed class Handler(AppDbContext database) : IHandler<Request, Page<Re
             .AsNoTracking()
             .ApplySpecification(new WidgetsLargerThan(request.LargerThan))
             .Select(widget => new Response(widget.Id.Value, widget.Name, widget.Size))
-            .ToPageAsync(new PageRequest(request.Number, request.Size), cancellationToken);
+            .ToPageAsync(new PageRequest(request.Number, request.PageSize), cancellationToken);
     }
 }
 
@@ -48,8 +48,8 @@ internal sealed class Endpoint : IEndpoint
             CancellationToken cancellationToken,
             int largerThan = 0,
             int number = 1,
-            int size = 20) =>
-                (await handler.HandleAsync(new Request(largerThan, number, size), cancellationToken))
+            int pageSize = 20) =>
+                (await handler.HandleAsync(new Request(largerThan, number, pageSize), cancellationToken))
                     .ToHttpResult())
         .AllowAnonymous();
 }

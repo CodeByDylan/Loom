@@ -47,6 +47,19 @@
         <MinVerTagPrefix>v</MinVerTagPrefix>
     </PropertyGroup>
 
+    <!-- Analyzers do not travel through a ProjectReference, so a package referencing Loom.Results does
+         not inherit LOOM0001 from it. Every shipped package is checked by the analyzer this repository
+         ships — otherwise Loom would be the one codebase not obeying the rule it sells. Loom.Results
+         applies it in its own file, where it is also packed.
+         Test projects are excluded: TUnit assertions await to the value asserted, so every
+         Assert.That over a Result reads as a discarded Result. -->
+    <ItemGroup Condition="'$(IsTestProject)' == 'false' AND '$(IsAnalyzerProject)' == 'false' AND '$(IsTemplateProject)' == 'false' AND '$(MSBuildProjectName)' != 'Loom.Results'">
+        <ProjectReference Include="$(MSBuildThisFileDirectory)src/Loom.Results.Analyzers/Loom.Results.Analyzers.csproj"
+                          ReferenceOutputAssembly="false"
+                          OutputItemType="Analyzer"
+                          PrivateAssets="all" />
+    </ItemGroup>
+
     <ItemGroup Condition="'$(IsTestProject)' == 'false'">
         <PackageReference Include="MinVer" PrivateAssets="all" />
         <None Include="$(MSBuildThisFileDirectory)README.md" Pack="true" PackagePath="\" Visible="false" />

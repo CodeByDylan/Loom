@@ -37,16 +37,17 @@ internal sealed class Handler(OrderingDbContext database, ICurrentCustomer custo
             ? new OpenOrdersForCustomer(customer.Id)
             : new OrdersForCustomer(customer.Id);
 
-        Page<Order> orders = await database.Orders
+        // Projected in the query, not materialised and mapped. Reading whole entities to build a
+        // response is the most common performance defect in an EF codebase, and the sample was doing
+        // it in the one slice a reader is most likely to copy.
+        return await database.Orders
             .AsNoTracking()
             .ApplySpecification(specification)
+            .Select(order => new Response(
+                order.Id.Value,
+                order.Status.ToString(),
+                order.Lines.Sum(line => line.Amount)))
             .ToPageAsync(page, cancellationToken);
-
-        return new Page<Response>(
-            [.. orders.Items.Select(order => new Response(order.Id.Value, order.Status.ToString(), order.Total))],
-            orders.TotalCount,
-            orders.Number,
-            orders.Size);
     }
 }
 

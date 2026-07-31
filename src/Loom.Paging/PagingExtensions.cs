@@ -46,9 +46,9 @@ public static class PagingExtensions
     /// <returns>The requested page, with the total count.</returns>
     /// <exception cref="ArgumentNullException">Either argument is <see langword="null" />.</exception>
     /// <remarks>
-    /// Enumerates <paramref name="source" /> more than once. For a database query, use the
-    /// asynchronous equivalent from the Loom persistence package, which counts and fetches without
-    /// materialising everything.
+    /// Materialises <paramref name="source" /> in full, so it holds the whole sequence in memory rather
+    /// than one page of it. For a database query, use the asynchronous equivalent from the Loom
+    /// persistence package, which counts and fetches in the database instead.
     /// </remarks>
     public static Page<T> ToPage<T>(this IEnumerable<T> source, PageRequest request)
     {

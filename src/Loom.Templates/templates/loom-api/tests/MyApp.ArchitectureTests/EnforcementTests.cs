@@ -24,7 +24,11 @@ public sealed class EnforcementTests
     {
         string[] slices = Slices();
 
-        await Assert.That(slices).IsNotEmpty();
+        // The count is asserted, not just its being non-empty. With one slice the comparison below has
+        // nothing to compare and passes without checking anything, so the number is stated here and a
+        // new slice fails this deliberately — the same reason the route table is snapshotted rather
+        // than counted. The independence check becomes load-bearing at the second slice.
+        await Assert.That(slices.Length).IsEqualTo(3);
 
         List<string> offenders = [];
 

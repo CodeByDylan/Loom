@@ -34,6 +34,17 @@ public sealed class PagingTests
     }
 
     [Test]
+    public async Task First_Is_Page_One_At_The_Largest_Size_Allowed()
+    {
+        // Pinned because the size is the one thing about First a reader could reasonably expect to be
+        // smaller. Nothing in this repo calls it — it exists for consumers — so without this the
+        // property could change size and no build would notice.
+        await Assert.That(PageRequest.First.Number).IsEqualTo(1);
+        await Assert.That(PageRequest.First.Size).IsEqualTo(PageRequest.DefaultMaximumSize);
+        await Assert.That(PageRequest.First.Skip).IsEqualTo(0);
+    }
+
+    [Test]
     public async Task A_Custom_Maximum_Is_Honoured()
     {
         PageRequest request = new(1, 500, maximumSize: 1000);
