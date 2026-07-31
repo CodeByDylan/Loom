@@ -160,13 +160,16 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 ## 11. Enforcement
 
-`tests/MyApp.ArchitectureTests` asserts, with NetArchTest:
+`tests/MyApp.ArchitectureTests` asserts, from the assembly's metadata:
 
 1. `Domain` references nothing but Loom packages and the BCL.
 2. No slice namespace depends on another slice namespace.
 3. Domain entities appear in no request or response type's public surface.
 4. `IConfiguration` is a constructor parameter of no type — it is read in the composition root or not at all.
-5. Every `IHandler<,>` implementation has a matching DI registration.
+
+`tests/MyApp.<Archetype>.Tests` asserts the one rule that needs a built container:
+
+5. Every `IHandler<,>` implementation, and every validator, resolves from the application's own service graph. Metadata cannot answer this — a registration exists only once the container is built — so it lives beside the tests that have one. Discover both by reflection; naming a handler proves only that handler is registered.
 
 A structural rule that is not in this list is a rule that will erode. If you add a structural
 rule to this file, add its test.

@@ -17,13 +17,17 @@ namespace MyApp.Worker;
 /// graph nobody runs: the decorator chain, the validators and the interceptor can all be registered
 /// differently there, and the difference only shows up in production. This is the composition root, so
 /// reading configuration here is composition rather than a service reaching for it.
+/// <para>
+/// Configuration is required rather than optional. An overload the test host could omit would leave the
+/// settings unbound and unvalidated in exactly the graph that claims to be the real one.
+/// </para>
 /// </remarks>
 internal static class WorkerServices
 {
     public static IServiceCollection AddWorkerServices(
         this IServiceCollection services,
         string connectionString,
-        IConfiguration? configuration = null)
+        IConfiguration configuration)
     {
         // Injected rather than taken from DateTime.Now, which is also what makes the schedule testable.
         services.AddSingleton(TimeProvider.System);
@@ -53,14 +57,10 @@ internal static class WorkerServices
             ServiceLifetime.Scoped,
             includeInternalTypes: true);
 
-        OptionsBuilder<RetireWidgetsOptions> options = services.AddOptions<RetireWidgetsOptions>();
-
-        if (configuration is not null)
-        {
-            options.Bind(configuration.GetSection(RetireWidgetsOptions.SectionName));
-        }
-
-        options.ValidateDataAnnotations().ValidateOnStart();
+        services.AddOptions<RetireWidgetsOptions>()
+            .Bind(configuration.GetSection(RetireWidgetsOptions.SectionName))
+            .ValidateDataAnnotations()
+            .ValidateOnStart();
 
         return services;
     }

@@ -67,5 +67,40 @@ public sealed class WidgetSliceTests
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
     }
 
+    [Test]
+    public async Task Listing_Pages_And_Filters_By_Size()
+    {
+        using HttpClient client = _app.Client();
+
+        foreach (int size in (int[])[5, 50, 500])
+        {
+            HttpResponseMessage created = await client.PostAsJsonAsync(
+                "/widgets",
+                new { name = $"widget-{size}", size });
+
+            await Assert.That(created.StatusCode).IsEqualTo(HttpStatusCode.OK);
+        }
+
+        // Two match the specification; one page of one proves the caller decides the size and that the
+        // total still counts everything the rule matched.
+        HttpResponseMessage response = await client.GetAsync(
+            new Uri("/widgets?largerThan=10&number=1&size=1", UriKind.Relative));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
+
+        WidgetPage? page = await response.Content.ReadFromJsonAsync<WidgetPage>();
+
+        await Assert.That(page).IsNotNull();
+        await Assert.That(page!.TotalCount).IsEqualTo(2);
+        await Assert.That(page.Items.Count).IsEqualTo(1);
+
+        // The specification orders largest first, so paging cannot reorder it.
+        await Assert.That(page.Items[0].Size).IsEqualTo(500);
+    }
+
     private sealed record WidgetResponse(Guid WidgetId);
+
+    private sealed record WidgetPage(IReadOnlyList<WidgetSummary> Items, int TotalCount, int Number, int Size);
+
+    private sealed record WidgetSummary(Guid WidgetId, string Name, int Size);
 }
