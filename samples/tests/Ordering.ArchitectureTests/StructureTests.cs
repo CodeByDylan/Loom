@@ -20,18 +20,40 @@ public sealed class StructureTests
 {
     private static readonly Assembly Domain = typeof(Order).Assembly;
     private static readonly Assembly Api = typeof(Program).Assembly;
+    private static readonly HashSet<string> FrameworkAssemblies = ReadFrameworkAssemblyNames();
+
+    private static HashSet<string> ReadFrameworkAssemblyNames()
+    {
+        string location = typeof(object).Assembly.Location;
+        string? directory = string.IsNullOrEmpty(location) ? null : Path.GetDirectoryName(location);
+
+        if (string.IsNullOrEmpty(directory))
+        {
+            throw new InvalidOperationException(
+                "Cannot locate the framework directory, so framework assemblies cannot be told from "
+                + "packages. This test needs a normal, non-single-file test host.");
+        }
+
+        return
+        [
+            .. Directory.EnumerateFiles(directory, "*.dll")
+                .Select(Path.GetFileNameWithoutExtension)
+                .OfType<string>(),
+        ];
+    }
 
     [Test]
     public async Task The_Domain_References_Only_Loom_And_The_Base_Library()
     {
+        // Framework assemblies are read from the runtime directory rather than matched on a System.
+        // prefix: a NuGet package can ship under that prefix — System.Data.SqlClient and
+        // System.Data.SQLite both do — so a prefix would admit a database driver into the domain.
         string[] offending =
         [
             .. Domain.GetReferencedAssemblies()
                 .Select(reference => reference.Name!)
                 .Where(name => !name.StartsWith("Loom.", StringComparison.Ordinal)
-                    && !name.StartsWith("System.", StringComparison.Ordinal)
-                    && !name.Equals("netstandard", StringComparison.Ordinal)
-                    && !name.Equals("System", StringComparison.Ordinal)),
+                    && !FrameworkAssemblies.Contains(name)),
         ];
 
         // The one boundary worth enforcing at compile time. If this list is ever non-empty, the domain
