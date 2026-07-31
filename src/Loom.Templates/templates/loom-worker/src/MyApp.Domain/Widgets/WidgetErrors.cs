@@ -15,10 +15,6 @@ public static class WidgetErrors
     public static Error SizeMustBePositive { get; } =
         Errors.Invalid("widgets.size_must_be_positive", "A widget's size must be greater than zero.");
 
-    /// <summary>No widget exists under that identifier.</summary>
-    public static Error NotFound { get; } =
-        Errors.NotFound("widgets.not_found", "No such widget.");
-
     /// <summary>The widget was already out of service, so retiring it again means nothing.</summary>
     public static Error AlreadyRetired { get; } =
         Errors.Conflict("widgets.already_retired", "The widget is already retired.");

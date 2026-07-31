@@ -35,4 +35,28 @@ public sealed class WidgetTests
         await Assert.That(created.IsFailure).IsTrue();
         await Assert.That(created.Error.Code).IsEqualTo(WidgetErrors.SizeMustBePositive.Code);
     }
+
+    [Test]
+    public async Task A_Widget_Can_Be_Retired_Once()
+    {
+        Widget widget = Widget.Create("bolt", 3).Value;
+
+        await Assert.That(widget.Retire().IsSuccess).IsTrue();
+        await Assert.That(widget.IsRetired).IsTrue();
+    }
+
+    [Test]
+    public async Task Retiring_A_Retired_Widget_Reports_A_Conflict()
+    {
+        // The invariant the slice leans on: a widget retired by something else between the query and
+        // the loop reports Conflict, which the pass counts as information rather than failure.
+        Widget widget = Widget.Create("bolt", 3).Value;
+        _ = widget.Retire();
+
+        Result again = widget.Retire();
+
+        await Assert.That(again.IsFailure).IsTrue();
+        await Assert.That(again.Error.Code).IsEqualTo(WidgetErrors.AlreadyRetired.Code);
+        await Assert.That(again.Error.Category).IsEqualTo(ErrorCategory.Conflict);
+    }
 }
