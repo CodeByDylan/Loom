@@ -10,6 +10,9 @@ Applies to `src/MyApp.Cli/`.
 - **A command handler contains no business logic.** It parses, dispatches to an `IHandler<,>`, maps the result to output and an exit code. Same thin-adapter rule as an endpoint.
 - **The same handlers the API and worker use.** If a CLI command needs logic that does not exist as a handler, write the handler — do not inline it into the command.
 
+The shape a command takes — illustrative, not compilable: `ToExitCode()` does not ship yet (see the
+callout under *Output and exit codes*).
+
 ```csharp
 internal static class ReconcileCommand
 {

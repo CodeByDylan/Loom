@@ -36,6 +36,13 @@ public sealed class WidgetSliceTests
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
         await Assert.That(response.Content.Headers.ContentType?.MediaType)
             .IsEqualTo("application/problem+json");
+
+        // The media type is a header; only parsing the body proves a problem document is in it.
+        Microsoft.AspNetCore.Mvc.ProblemDetails? problem =
+            await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>();
+
+        await Assert.That(problem).IsNotNull();
+        await Assert.That(problem!.Status).IsEqualTo(404);
     }
 
     [Test]
