@@ -20,18 +20,11 @@ internal sealed partial class RetireWidgetsPass(
     IOptions<RetireWidgetsOptions> options,
     ILogger<RetireWidgetsPass> logger)
 {
-    /// <summary>How many times a transient failure is retried before the pass is abandoned.</summary>
-    /// <remarks>
-    /// Bounded on purpose. Unbounded retry against a permanent failure is an outage with extra steps,
-    /// and the next tick will try again anyway.
-    /// </remarks>
-    internal const int MaximumAttempts = 3;
-
     private readonly RetireWidgetsOptions _options = options.Value;
 
     public async Task RunAsync(CancellationToken cancellationToken)
     {
-        for (int attempt = 1; attempt <= MaximumAttempts; attempt++)
+        for (int attempt = 1; attempt <= _options.MaximumAttempts; attempt++)
         {
             // A scope per attempt, never one held across them. A DbContext kept between attempts
             // accumulates tracked entities and eventually answers from a stale graph.
@@ -67,9 +60,9 @@ internal sealed partial class RetireWidgetsPass(
                 return;
             }
 
-            if (attempt == MaximumAttempts)
+            if (attempt == _options.MaximumAttempts)
             {
-                GaveUp(logger, MaximumAttempts, result.Error.Code);
+                GaveUp(logger, _options.MaximumAttempts, result.Error.Code);
                 return;
             }
 

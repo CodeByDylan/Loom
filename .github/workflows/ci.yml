@@ -67,10 +67,16 @@ jobs:
 
     # Every archetype, because they are separate trees: a fix applied to one is not applied to the
     # other, and only building both notices.
+    #
+    # Every awkward name, because the engine writes a sanitised identifier into file contents while
+    # naming directories with the raw one. A name that is already a valid identifier path hides that
+    # completely — Acme.Billing built while My-App did not. Tests run for the canonical name only;
+    # what the other two are here to catch fails at build.
     strategy:
       fail-fast: false
       matrix:
         archetype: [loom-api, loom-worker]
+        name: [Acme.Billing, My-App, 123orders]
 
     steps:
       - uses: actions/checkout@v4
@@ -89,12 +95,13 @@ jobs:
         run: dotnet new install artifacts/templates/*.nupkg
 
       - name: Scaffold a solution
-        run: dotnet new ${{ matrix.archetype }} --name Acme.Billing --output "$RUNNER_TEMP/scaffold/Acme.Billing"
+        run: dotnet new ${{ matrix.archetype }} --name '${{ matrix.name }}' --output "$RUNNER_TEMP/scaffold"
 
       - name: Build what it produced
-        working-directory: ${{ runner.temp }}/scaffold/Acme.Billing
+        working-directory: ${{ runner.temp }}/scaffold
         run: dotnet build
 
       - name: Test what it produced
-        working-directory: ${{ runner.temp }}/scaffold/Acme.Billing
+        if: matrix.name == 'Acme.Billing'
+        working-directory: ${{ runner.temp }}/scaffold
         run: dotnet test --no-build

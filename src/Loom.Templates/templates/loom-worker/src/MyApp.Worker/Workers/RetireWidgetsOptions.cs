@@ -15,6 +15,21 @@ internal sealed class RetireWidgetsOptions
     /// <summary>The configuration section these settings are bound from.</summary>
     public const string SectionName = "RetireWidgets";
 
+    /// <summary>The largest batch a pass may take, and the bound a request is validated against.</summary>
+    /// <remarks>
+    /// Named once. The same number bounds the setting and the request built from it, and two literals
+    /// drift the moment either is tuned.
+    /// </remarks>
+    public const int LargestBatch = 10_000;
+
+    /// <summary>Gets how many times a transient failure is retried before the pass is abandoned.</summary>
+    /// <remarks>
+    /// Bounded on purpose. Unbounded retry against a permanent failure is an outage with extra steps,
+    /// and the next tick will try again anyway.
+    /// </remarks>
+    [Range(1, 10)]
+    public int MaximumAttempts { get; init; } = 3;
+
     /// <summary>Gets how long to wait between passes.</summary>
     [Range(typeof(TimeSpan), "00:00:01", "1.00:00:00")]
     public TimeSpan Interval { get; init; } = TimeSpan.FromMinutes(5);
@@ -33,6 +48,6 @@ internal sealed class RetireWidgetsOptions
     /// Bounded so a backlog is worked through over several ticks instead of loading every matching row
     /// into memory at once.
     /// </remarks>
-    [Range(1, 10_000)]
+    [Range(1, LargestBatch)]
     public int BatchSize { get; init; } = 500;
 }
