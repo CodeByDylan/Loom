@@ -8,9 +8,55 @@
 
     <ItemGroup>
         <!-- The whole payload. bin and obj are excluded because a template is a runnable project:
-             anyone can open templates/loom-api and build it, and the leftovers must not be packed. -->
-        <Content Include="templates\**\*" Exclude="templates\**\bin\**;templates\**\obj\**" />
+             anyone can open templates/loom-api and build it, and the leftovers must not be packed.
+             Directory.Packages.props is excluded because a rewritten copy is packed in its place. -->
+        <Content Include="templates\**\*"
+                 Exclude="templates\**\bin\**;templates\**\obj\**;templates\**\Directory.Packages.props" />
         <Compile Remove="**\*" />
+
+        <!-- Declared outside the target so RecursiveDir is populated by the wildcard. -->
+        <TemplatePackageVersions Include="templates\**\Directory.Packages.props" />
     </ItemGroup>
+
+    <!-- A released template should reference the Loom packages it shipped alongside, not whichever
+         version happened to be current when the file was last edited by hand. The source keeps a real
+         published version so the template stays buildable in place — `dotnet ef` has to be able to
+         generate a migration against it — and the released copy is rewritten to this package's version.
+
+         Only when releasing. An untagged build carries a height-based prerelease version whose packages
+         were never published, so pinning to it would produce a template that cannot restore, and CI
+         scaffolds and builds one on every push. Left unpinned, that check runs against the published
+         version in source, which is the only version it could meaningfully verify against.
+         `release.yml` passes the flag; nothing else does.
+
+         Verified rather than assumed: the rewrite is read back and the build fails if it did not take,
+         because a template pinning the wrong version is only discoverable by scaffolding one. -->
+    <PropertyGroup>
+        <PinTemplatesToPackageVersion Condition="'$(PinTemplatesToPackageVersion)' == ''">false</PinTemplatesToPackageVersion>
+    </PropertyGroup>
+
+    <Target Name="PinTemplatesToThisVersion" BeforeTargets="_GetPackageFiles">
+        <PropertyGroup>
+            <_PinnedTemplates>$(IntermediateOutputPath)pinned\</_PinnedTemplates>
+        </PropertyGroup>
+
+        <WriteLinesToFile Condition="'$(PinTemplatesToPackageVersion)' == 'true'"
+                          File="$(_PinnedTemplates)%(TemplatePackageVersions.RecursiveDir)Directory.Packages.props"
+                          Lines="$([System.Text.RegularExpressions.Regex]::Replace($([System.IO.File]::ReadAllText('%(TemplatePackageVersions.FullPath)')), '&lt;LoomVersion&gt;[^&lt;]*&lt;/LoomVersion&gt;', '&lt;LoomVersion&gt;$(PackageVersion)&lt;/LoomVersion&gt;'))"
+                          Overwrite="true"
+                          WriteOnlyWhenDifferent="true" />
+
+        <Error Condition="'$(PinTemplatesToPackageVersion)' == 'true' AND !$([System.IO.File]::ReadAllText('$(_PinnedTemplates)%(TemplatePackageVersions.RecursiveDir)Directory.Packages.props').Contains('&lt;LoomVersion&gt;$(PackageVersion)&lt;/LoomVersion&gt;'))"
+               Text="The packed %(TemplatePackageVersions.RecursiveDir)Directory.Packages.props was not pinned to $(PackageVersion)." />
+
+        <Copy Condition="'$(PinTemplatesToPackageVersion)' != 'true'"
+              SourceFiles="%(TemplatePackageVersions.FullPath)"
+              DestinationFiles="$(_PinnedTemplates)%(TemplatePackageVersions.RecursiveDir)Directory.Packages.props" />
+
+        <ItemGroup>
+            <Content Include="$(_PinnedTemplates)%(TemplatePackageVersions.RecursiveDir)Directory.Packages.props"
+                     PackagePath="content/templates/%(TemplatePackageVersions.RecursiveDir)Directory.Packages.props" />
+        </ItemGroup>
+    </Target>
 
 </Project>
