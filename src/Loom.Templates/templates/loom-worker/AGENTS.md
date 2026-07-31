@@ -26,7 +26,7 @@ A **slice** is one operation. One file, one namespace, holding its request, resp
 handler, and entry point together.
 
 **The stack.** Versions live in `Directory.Packages.props`, never here and never in a `.csproj`.
-Loom packages install as `CodeByDylan.<name>`; the identifier is prefixed, the namespace named below is not.
+Loom packages install under their full identifier, `CodeByDylan.Loom.<name>`; the namespace named below drops the `CodeByDylan.` prefix.
 
 | Concern | Choice | Notes |
 | --- | --- | --- |
@@ -194,7 +194,10 @@ Applies to `src/MyApp.Worker/`.
 - **`ExecuteAsync` contains no business logic.** It ticks, runs one pass, and refuses to let a failure end the loop. Resolving a scope and dispatching to a handler happens a level down in `RunOnceAsync` — that is the position an endpoint occupies in the API archetype, and keeping the two apart is what makes either testable without the other.
 
 ```csharp
-internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimeProvider clock)
+internal sealed partial class ReconcileOrdersWorker(
+    IServiceScopeFactory scopes,
+    TimeProvider clock,
+    ILogger<ReconcileOrdersWorker> logger)
     : BackgroundService
 {
     protected override async Task ExecuteAsync(CancellationToken ct)
@@ -202,26 +205,37 @@ internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimePro
         using var timer = new PeriodicTimer(TimeSpan.FromMinutes(5), clock);
         while (await timer.WaitForNextTickAsync(ct))
         {
-            try
-            {
-                await RunOnceAsync(ct);
-            }
-            catch (Exception exception)
-                when (exception is not OperationCanceledException || !ct.IsCancellationRequested)
-            {
-                // Log and continue. Only cancellation that shutdown asked for ends the loop.
-            }
+            await RunGuardedAsync(ct);
+        }
+    }
+
+    // internal, not private: the testing rules below call this directly, so the test assembly needs
+    // an InternalsVisibleTo.
+    internal async Task RunGuardedAsync(CancellationToken ct)
+    {
+        try
+        {
+            await RunOnceAsync(ct);
+        }
+        catch (Exception exception)
+            when (exception is not OperationCanceledException || !ct.IsCancellationRequested)
+        {
+            // Swallowed, never silent. Only cancellation that shutdown asked for ends the loop.
+            Failed(logger, exception);
         }
     }
 
     // ExecuteAsync schedules and keeps the loop alive; one pass lives here.
-    private async Task RunOnceAsync(CancellationToken ct)
+    internal async Task RunOnceAsync(CancellationToken ct)
     {
         await using var scope = scopes.CreateAsyncScope();
         var handler = scope.ServiceProvider.GetRequiredService<IHandler<Request, Response>>();
         var result = await handler.HandleAsync(new Request(), ct);
         // map result category to retry / dead-letter / log — never throw to signal it
     }
+
+    [LoggerMessage(Level = LogLevel.Error, Message = "A pass threw and was swallowed to keep the worker alive.")]
+    private static partial void Failed(ILogger logger, Exception exception);
 }
 ```
 
@@ -239,4 +253,4 @@ internal sealed class ReconcileOrdersWorker(IServiceScopeFactory scopes, TimePro
 
 - **Handlers are tested directly**, against Testcontainers Postgres, with Respawn between tests. There is no transport to go through, so the handler *is* the entry point.
 - **Separate the pass from the schedule, and test the pass.** `RunOnceAsync` holds everything decided by a result — the scope, the dispatch, retry against dead-letter — so it can be exercised against a stub handler with no clock and no timer. Make the retry backoff a setting so a test can set it to zero.
-- **Test one guarded iteration, not the timer.** Extract the `try`/`catch` so a test can call it directly and assert which exceptions survive it. That a failing pass does not end the loop is your logic; that `PeriodicTimer` fires is the BCL's. Driving a real `BackgroundService` from a fake clock needs the scheduler to hand off between advancing the clock and the loop resuming — a test that does it is flaky unless it sleeps, and then it is a slow test of someone else's code.
+- **Test one guarded iteration, not the timer.** Extract the `try`/`catch` into an `internal` method — with `<InternalsVisibleTo Include="MyApp.Worker.Tests" />` on the host project — so a test can call it directly and assert which exceptions survive it. That a failing pass does not end the loop is your logic; that `PeriodicTimer` fires is the BCL's. Driving a real `BackgroundService` from a fake clock needs the scheduler to hand off between advancing the clock and the loop resuming — a test that does it is flaky unless it sleeps, and then it is a slow test of someone else's code.
