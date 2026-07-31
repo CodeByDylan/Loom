@@ -40,7 +40,7 @@ referenced by a project.
 | Package | What it gives you |
 | --- | --- |
 | `Loom.Results` | `Result`, `Result<T>`, `Error` and a closed six-member `ErrorCategory`. The vocabulary every other package's signatures are written in. Ships an analyzer that warns when a result is discarded. Depends on nothing. |
-| `Loom.Entities` | `Id<TEntity>`, `Entity<TSelf>`, `AggregateRoot<TSelf>`, `IDomainEvent`. Strongly-typed identities over UUID v7, identity equality, and domain event collection. |
+| `Loom.Entities` | `Id<TEntity>`, `Entity<TSelf>`, `AggregateRoot<TSelf>`, `IDomainEvent`, `IDomainEventHandler<TEvent>`. Strongly-typed identities over UUID v7 that serialise as bare GUIDs, identity equality, and domain event collection. |
 | `Loom.Specifications` | Named business rules over a type — a predicate, optional eager loading, optional ordering — as pure expression trees, applied to an `IQueryable` you still own. |
 | `Loom.Paging` | `PageRequest` and `Page<T>`, so no project reinvents the paging envelope. |
 | `Loom.Handlers.Abstractions` | `IHandler<TRequest, TResponse>` as pure types, so a domain project can declare handlers without referencing a container. |

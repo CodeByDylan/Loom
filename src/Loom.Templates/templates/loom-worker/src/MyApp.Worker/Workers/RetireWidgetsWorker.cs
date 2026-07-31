@@ -22,9 +22,9 @@ internal sealed partial class RetireWidgetsWorker(
     {
         using PeriodicTimer timer = new(_options.Interval, clock);
 
-        while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
+        while (await timer.WaitForNextTickAsync(stoppingToken))
         {
-            await RunGuardedAsync(stoppingToken).ConfigureAwait(false);
+            await RunGuardedAsync(stoppingToken);
         }
     }
 
@@ -38,7 +38,7 @@ internal sealed partial class RetireWidgetsWorker(
     {
         try
         {
-            await pass.RunAsync(stoppingToken).ConfigureAwait(false);
+            await pass.RunAsync(stoppingToken);
         }
         catch (Exception exception)
             when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)

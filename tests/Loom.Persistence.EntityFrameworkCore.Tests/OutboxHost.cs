@@ -1,5 +1,4 @@
 using Loom.Entities;
-using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -8,66 +7,40 @@ namespace Loom.Persistence.EntityFrameworkCore.Tests;
 /// <summary>
 /// A host with the outbox configured, driving delivery by hand rather than on a timer.
 /// </summary>
-internal sealed class OutboxHost : IAsyncDisposable
+internal sealed class OutboxHost : SqliteHost
 {
-    private readonly SqliteConnection _connection;
-    private readonly ServiceProvider _provider;
-
-    private OutboxHost(SqliteConnection connection, ServiceProvider provider)
-    {
-        _connection = connection;
-        _provider = provider;
-    }
-
     internal static async Task<OutboxHost> CreateAsync(bool failing = false, int maximumAttempts = 5)
     {
-        SqliteConnection connection = new("Filename=:memory:");
-        await connection.OpenAsync();
+        OutboxHost host = new();
 
-        ServiceCollection services = new();
-        services.AddSingleton<Recorder>();
-
-        services.AddLoomPersistence(options => options.UseOutbox<OutboxDbContext>(outbox =>
+        await host.InitialiseAsync<OutboxDbContext>(services =>
         {
-            outbox.MaximumAttempts = maximumAttempts;
-            outbox.EventAssemblies = [typeof(OrderShipped).Assembly];
-        }));
+            services.AddLoomPersistence(options => options.UseOutbox<OutboxDbContext>(outbox =>
+            {
+                outbox.MaximumAttempts = maximumAttempts;
+                outbox.EventAssemblies = [typeof(OrderShipped).Assembly];
+            }));
 
-        services.AddDbContext<OutboxDbContext>((serviceProvider, options) => options
-            .UseSqlite(connection)
-            .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
+            services.AddScoped<IDomainEventHandler<OrderCancelled>, OutboxTests.CancelledHandler>();
 
-        services.AddScoped<IDomainEventHandler<OrderCancelled>, OutboxTests.CancelledHandler>();
+            if (failing)
+            {
+                services.AddScoped<IDomainEventHandler<OrderShipped>, OutboxTests.FailingShippedHandler>();
+            }
+            else
+            {
+                services.AddScoped<IDomainEventHandler<OrderShipped>, OutboxTests.ShippedHandler>();
+            }
+        });
 
-        if (failing)
-        {
-            services.AddScoped<IDomainEventHandler<OrderShipped>, OutboxTests.FailingShippedHandler>();
-        }
-        else
-        {
-            services.AddScoped<IDomainEventHandler<OrderShipped>, OutboxTests.ShippedHandler>();
-        }
-
-        ServiceProvider provider = services.BuildServiceProvider();
-
-        using (IServiceScope scope = provider.CreateScope())
-        {
-            await scope.ServiceProvider.GetRequiredService<OutboxDbContext>().Database.EnsureCreatedAsync();
-        }
-
-        return new OutboxHost(connection, provider);
+        return host;
     }
 
-    internal Recorder Recorder => _provider.GetRequiredService<Recorder>();
-
-    internal OutboxProcessor<OutboxDbContext> Processor =>
-        _provider.GetRequiredService<OutboxProcessor<OutboxDbContext>>();
-
-    internal IServiceScope CreateScope() => _provider.CreateScope();
+    internal OutboxProcessor<OutboxDbContext> Processor => Resolve<OutboxProcessor<OutboxDbContext>>();
 
     internal async Task InScopeAsync(Func<OutboxDbContext, Task> work)
     {
-        using IServiceScope scope = _provider.CreateScope();
+        using IServiceScope scope = CreateScope();
         await work(scope.ServiceProvider.GetRequiredService<OutboxDbContext>());
     }
 
@@ -87,12 +60,6 @@ internal sealed class OutboxHost : IAsyncDisposable
             .CountAsync(message => message.DeliveredAt == null && !message.Abandoned));
 
         return owed;
-    }
-
-    public async ValueTask DisposeAsync()
-    {
-        await _provider.DisposeAsync();
-        await _connection.DisposeAsync();
     }
 }
 

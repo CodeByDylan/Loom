@@ -44,7 +44,7 @@ internal sealed partial class OutboxDeliveryService<TContext>(
                 DeliveryPassFailed(logger, typeof(TContext).Name, exception);
             }
 
-            if (!await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
+            if (!await timer.WaitForNextTickAsync(stoppingToken))
             {
                 return;
             }

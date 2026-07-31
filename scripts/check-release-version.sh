@@ -32,7 +32,9 @@ if [[ "$expected" == "$tag" ]]; then
 fi
 
 shopt -s nullglob
-packages=("$directory"/*.nupkg)
+# Symbol packages carry the same version and are pushed alongside their package, so a mismatched one
+# would be published just as permanently. They are checked too, not assumed to follow.
+packages=("$directory"/*.nupkg "$directory"/*.snupkg)
 
 if [[ ${#packages[@]} -eq 0 ]]; then
     printf 'check-release: no packages found in %s\n' "$directory" >&2
@@ -42,7 +44,7 @@ fi
 failures=0
 
 for package in "${packages[@]}"; do
-    name=$(basename "$package" .nupkg)
+    name=$(basename "${package%.*}")
 
     # Loom.Results.AspNetCore.0.1.0 -> 0.1.0. The identifier itself contains dots, so the version is
     # taken as the tail beginning at the first digit-led segment.
@@ -65,4 +67,4 @@ if [[ "$failures" -gt 0 ]]; then
     exit 1
 fi
 
-printf 'check-release: all %s package(s) are version %s\n' "${#packages[@]}" "$expected"
+printf 'check-release: all %s package(s), symbols included, are version %s\n' "${#packages[@]}" "$expected"

@@ -12,12 +12,12 @@ outgrown this file.
 
 ## Built
 
-`loom-worker` followed, so two of the three archetypes exist. Its schedule is tested by advancing a
-fake clock rather than sleeping, and building it exposed two defects in that test harness worth
-recording: asserting one dispatch hid the fact that the loop only ever ran once, and `PeriodicTimer`
-coalesces ticks, so advancing a fake clock in a tight burst collapses every tick into a single
-iteration. Both tests now require a second dispatch, which is what actually proves the loop survived
-the first.
+`loom-worker` followed, so two of the three archetypes exist. Its pass and its schedule are tested apart, with no
+clock and no timer: the pass is exercised against a stub handler, and one guarded iteration is called
+directly to assert which exceptions survive it. Driving a real `BackgroundService` from a fake clock
+was tried first and abandoned — `PeriodicTimer` coalesces ticks, so advancing in a burst collapses
+them into one dispatch, and the test was flaky without a real sleep. That the timer fires is the BCL's
+business; what the worker owns is what happens inside one tick.
 
 The worker has no equivalent of `ToHttpResult()`. Its category-to-disposition mapping — retry, dead
 letter, log once — lives in the pass, alongside the scope it resolves and the handler it

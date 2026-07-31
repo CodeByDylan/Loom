@@ -32,41 +32,52 @@ internal sealed class Handler(AppDbContext database) : IHandler<Request, Respons
     {
         ArgumentNullException.ThrowIfNull(request);
 
-        // Bounded and ordered. A scheduled operation runs against whatever has accumulated since the
-        // last tick, so an unbounded query is one backlog away from loading the table into memory;
-        // ordering makes which rows a pass takes deterministic rather than whatever the plan returns.
-        List<Widget> oversized = await database.Widgets
-            .ApplySpecification(new OversizedWidgets(request.LargerThan))
-            .OrderBy(widget => widget.Size)
-            .ThenBy(widget => widget.Id)
-            .Take(request.BatchSize)
-            .ToListAsync(cancellationToken);
-
-        int retired = 0;
-
-        foreach (Widget widget in oversized)
-        {
-            // The domain decides whether this is allowed. A widget retired by something else between
-            // the query and here reports Conflict, which is information rather than a failure of the
-            // batch — so the loop keeps going.
-            if (widget.Retire().IsSuccess)
-            {
-                retired++;
-            }
-        }
-
+        // The read is inside the guard too. A database that is briefly unreachable fails the query
+        // just as readily as the save, and leaving it outside meant a transient read threw instead of
+        // reporting the one category the loop retries.
         try
         {
+            // Bounded and ordered. A scheduled operation runs against whatever has accumulated since
+            // the last tick, so an unbounded query is one backlog away from loading the table into
+            // memory; ordering makes which rows a pass takes deterministic rather than whatever the
+            // plan returns.
+            List<Widget> oversized = await database.Widgets
+                .ApplySpecification(new OversizedWidgets(request.LargerThan))
+                .OrderBy(widget => widget.Size)
+                .ThenBy(widget => widget.Id)
+                .Take(request.BatchSize)
+                .ToListAsync(cancellationToken);
+
+            int retired = 0;
+
+            foreach (Widget widget in oversized)
+            {
+                // The domain decides whether this is allowed. A widget retired by something else
+                // between the query and here reports Conflict, which is information rather than a
+                // failure of the batch — so the loop keeps going.
+                if (widget.Retire().IsSuccess)
+                {
+                    retired++;
+                }
+            }
+
             await database.SaveChangesAsync(cancellationToken);
+
+            return new Response(retired);
         }
-        catch (DbUpdateException exception) when (exception.InnerException is NpgsqlException { IsTransient: true })
+        catch (Exception exception) when (IsTransient(exception))
         {
-            // Reported rather than thrown, and only when the driver says the failure is transient. This
-            // is the one outcome the loop retries with backoff — anything else will fail identically on
-            // the next attempt, so it is dead-lettered instead.
+            // Reported rather than thrown, and only when the driver says the failure is transient.
+            // This is the one outcome the loop retries with backoff — anything else will fail
+            // identically on the next attempt, so it is dead-lettered instead.
             return WidgetErrors.StorageUnavailable;
         }
-
-        return new Response(retired);
     }
+
+    private static bool IsTransient(Exception exception) => exception switch
+    {
+        NpgsqlException { IsTransient: true } => true,
+        DbUpdateException { InnerException: NpgsqlException { IsTransient: true } } => true,
+        _ => false,
+    };
 }

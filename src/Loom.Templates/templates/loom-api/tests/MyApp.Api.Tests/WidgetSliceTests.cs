@@ -84,7 +84,7 @@ public sealed class WidgetSliceTests
         // Two match the specification; one page of one proves the caller decides the size and that the
         // total still counts everything the rule matched.
         HttpResponseMessage response = await client.GetAsync(
-            new Uri("/widgets?largerThan=10&number=1&size=1", UriKind.Relative));
+            new Uri("/widgets?largerThan=10&number=1&pageSize=1", UriKind.Relative));
 
         await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.OK);
 

@@ -36,7 +36,7 @@ public sealed class IdTests
     }
 
     [Test]
-    public async Task Identities_Created_Milliseconds_Apart_Sort_By_Creation_Time()
+    public async Task Identities_Created_Milliseconds_Apart_Compare_In_That_Order()
     {
         Id<Order> first = Id<Order>.New();
         await Task.Delay(millisecondsDelay: 3);

@@ -36,16 +36,7 @@ public static class ResultHttpExtensions
     /// A category that reaches here unmapped means the set grew without this being updated, and a quiet
     /// 500 would hide that.
     /// </remarks>
-    public static int ToStatusCode(this ErrorCategory category) => category switch
-    {
-        ErrorCategory.Invalid => StatusCodes.Status400BadRequest,
-        ErrorCategory.Unauthorized => StatusCodes.Status401Unauthorized,
-        ErrorCategory.Forbidden => StatusCodes.Status403Forbidden,
-        ErrorCategory.NotFound => StatusCodes.Status404NotFound,
-        ErrorCategory.Conflict => StatusCodes.Status409Conflict,
-        ErrorCategory.Unavailable => StatusCodes.Status503ServiceUnavailable,
-        _ => throw new ArgumentOutOfRangeException(nameof(category), category, "Unmapped error category."),
-    };
+    public static int ToStatusCode(this ErrorCategory category) => Transport(category).Status;
 
     /// <summary>
     /// Describes an error as a problem details payload.
@@ -112,14 +103,21 @@ public static class ResultHttpExtensions
         return TypedResults.Problem(error.ToProblemDetails());
     }
 
-    private static string TitleFor(ErrorCategory category) => category switch
+    private static string TitleFor(ErrorCategory category) => Transport(category).Title;
+
+    /// <summary>What a category becomes on the wire: a status code and the title beside it.</summary>
+    /// <remarks>
+    /// One mapping rather than two switches over the same closed set. Two would let a category gain a
+    /// status code and keep a stale title, and each would need its own reminder to stay total.
+    /// </remarks>
+    private static (int Status, string Title) Transport(ErrorCategory category) => category switch
     {
-        ErrorCategory.Invalid => "Invalid request",
-        ErrorCategory.Unauthorized => "Not authenticated",
-        ErrorCategory.Forbidden => "Not permitted",
-        ErrorCategory.NotFound => "Not found",
-        ErrorCategory.Conflict => "Conflict",
-        ErrorCategory.Unavailable => "Temporarily unavailable",
+        ErrorCategory.Invalid => (StatusCodes.Status400BadRequest, "Invalid request"),
+        ErrorCategory.Unauthorized => (StatusCodes.Status401Unauthorized, "Not authenticated"),
+        ErrorCategory.Forbidden => (StatusCodes.Status403Forbidden, "Not permitted"),
+        ErrorCategory.NotFound => (StatusCodes.Status404NotFound, "Not found"),
+        ErrorCategory.Conflict => (StatusCodes.Status409Conflict, "Conflict"),
+        ErrorCategory.Unavailable => (StatusCodes.Status503ServiceUnavailable, "Temporarily unavailable"),
         _ => throw new ArgumentOutOfRangeException(nameof(category), category, "Unmapped error category."),
     };
 }
