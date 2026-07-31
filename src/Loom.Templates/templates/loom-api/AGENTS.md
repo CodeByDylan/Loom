@@ -169,7 +169,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 `tests/MyApp.<Archetype>.Tests` asserts the one rule that needs a built container:
 
-5. Every `IHandler<,>` implementation, and every validator, resolves from the application's own service graph. Metadata cannot answer this — a registration exists only once the container is built — so it lives beside the tests that have one. Discover both by reflection; naming a handler proves only that handler is registered.
+5. Every handler implementation — both `IHandler<,>` and the void `IHandler<>` — and every validator, resolves from the application's own service graph. Metadata cannot answer this — a registration exists only once the container is built — so it lives beside the tests that have one. Discover both by reflection; naming a handler proves only that handler is registered.
 
 A structural rule that is not in this list is a rule that will erode. If you add a structural
 rule to this file, add its test.
