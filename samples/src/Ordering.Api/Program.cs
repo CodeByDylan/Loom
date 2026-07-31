@@ -117,6 +117,12 @@ builder.Services.AddProblemDetails();
 
 WebApplication app = builder.Build();
 
+// Both lean on the ProblemDetails service registered above. Without them, only failures that pass
+// through ToHttpResult() came back as problem details — an unhandled exception was a bodyless 500 and
+// an unmatched route a bodyless 404, breaking the rule that every non-2xx response is ProblemDetails.
+app.UseExceptionHandler();
+app.UseStatusCodePages();
+
 app.UseAuthentication();
 app.UseAuthorization();
 
