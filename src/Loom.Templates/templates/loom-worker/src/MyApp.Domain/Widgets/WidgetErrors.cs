@@ -22,4 +22,8 @@ public static class WidgetErrors
     /// <summary>The widget was already out of service, so retiring it again means nothing.</summary>
     public static Error AlreadyRetired { get; } =
         Errors.Conflict("widgets.already_retired", "The widget is already retired.");
+
+    /// <summary>Storage was briefly unreachable. Retrying may succeed, so the caller should.</summary>
+    public static Error StorageUnavailable { get; } =
+        Errors.Unavailable("widgets.storage_unavailable", "Widget storage is temporarily unavailable.");
 }

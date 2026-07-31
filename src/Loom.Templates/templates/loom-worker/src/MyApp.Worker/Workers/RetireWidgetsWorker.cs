@@ -1,6 +1,7 @@
 using Loom.Handlers;
 using Loom.Results;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Options;
 using MyApp.Worker.Features.Widgets.RetireOversizedWidgets;
 
 namespace MyApp.Worker.Workers;
@@ -15,10 +16,11 @@ namespace MyApp.Worker.Workers;
 internal sealed partial class RetireWidgetsWorker(
     IServiceScopeFactory scopes,
     TimeProvider clock,
+    IOptions<RetireWidgetsOptions> options,
     ILogger<RetireWidgetsWorker> logger)
     : BackgroundService
 {
-    private static readonly TimeSpan Interval = TimeSpan.FromMinutes(5);
+    private readonly RetireWidgetsOptions _options = options.Value;
 
     /// <summary>How many times a transient failure is retried before the iteration is abandoned.</summary>
     /// <remarks>
@@ -29,7 +31,7 @@ internal sealed partial class RetireWidgetsWorker(
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        using PeriodicTimer timer = new(Interval, clock);
+        using PeriodicTimer timer = new(_options.Interval, clock);
 
         while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
         {
@@ -37,10 +39,15 @@ internal sealed partial class RetireWidgetsWorker(
             {
                 await RunOnceAsync(stoppingToken).ConfigureAwait(false);
             }
-            catch (Exception exception) when (exception is not OperationCanceledException)
+            catch (Exception exception)
+                when (exception is not OperationCanceledException || !stoppingToken.IsCancellationRequested)
             {
                 // A failed iteration must not kill the worker: an exception leaving ExecuteAsync stops
                 // the service, and in some hosting models it does so silently.
+                //
+                // Cancellation is only fatal when shutdown asked for it. A timeout inside the iteration
+                // also surfaces as OperationCanceledException, and treating that as shutdown would stop
+                // the worker for good over one slow query.
                 Failed(logger, exception);
             }
         }
@@ -58,7 +65,7 @@ internal sealed partial class RetireWidgetsWorker(
                 .GetRequiredService<IHandler<Request, Response>>();
 
             Result<Response> result = await handler
-                .HandleAsync(new Request(LargerThan: 100), cancellationToken)
+                .HandleAsync(new Request(_options.LargerThan, _options.BatchSize), cancellationToken)
                 .ConfigureAwait(false);
 
             if (result.IsSuccess)
