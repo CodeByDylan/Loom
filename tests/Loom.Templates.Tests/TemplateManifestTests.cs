@@ -107,20 +107,24 @@ public sealed class TemplateManifestTests
         string[] shared = ["Directory.Build.props", "global.json", ".editorconfig", ".gitignore"];
         string[] templates = [.. Templates().Order(StringComparer.Ordinal)];
 
-        await Assert.That(templates.Length).IsGreaterThan(0);
+        // Two, not one. With a single template the comparison below never runs and the test passes
+        // while checking nothing.
+        await Assert.That(templates.Length).IsGreaterThanOrEqualTo(2);
 
         // Duplicated across archetypes because a dotnet new template has to be a self-contained tree.
         // Duplication that nothing checks is duplication that drifts, and an archetype quietly built on
         // different conventions is the one failure this package cannot afford.
         foreach (string file in shared)
         {
-            string expected = await File.ReadAllTextAsync(Path.Combine(TemplatesRoot, templates[0], file));
+            // Bytes rather than text, so a byte-order mark or a line-ending change counts as the
+            // divergence it is.
+            byte[] expected = await File.ReadAllBytesAsync(Path.Combine(TemplatesRoot, templates[0], file));
 
             foreach (string template in templates.Skip(1))
             {
-                string actual = await File.ReadAllTextAsync(Path.Combine(TemplatesRoot, template, file));
+                byte[] actual = await File.ReadAllBytesAsync(Path.Combine(TemplatesRoot, template, file));
 
-                await Assert.That(actual).IsEqualTo(expected);
+                await Assert.That(actual).IsEquivalentTo(expected);
             }
         }
     }

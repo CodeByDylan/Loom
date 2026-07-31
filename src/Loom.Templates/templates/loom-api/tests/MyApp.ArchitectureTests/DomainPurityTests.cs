@@ -21,6 +21,7 @@ public sealed class DomainPurityTests
             "Microsoft.AspNetCore",
             "FluentValidation",
             "Npgsql",
+            "Microsoft.Extensions.DependencyInjection",
         ];
 
         ArchTestResult result = Types.InAssembly(Domain)
@@ -28,7 +29,8 @@ public sealed class DomainPurityTests
             .NotHaveDependencyOnAny(forbidden)
             .GetResult();
 
-        await Assert.That(result.IsSuccessful).IsTrue();
+        // Named, because "false" does not say which type reached for what.
+        await Assert.That(result.FailingTypeNames ?? []).IsEmpty();
     }
 
     [Test]

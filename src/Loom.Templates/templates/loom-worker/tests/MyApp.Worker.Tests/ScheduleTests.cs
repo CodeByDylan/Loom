@@ -3,6 +3,7 @@ using Loom.Results;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 using Microsoft.Extensions.Time.Testing;
 using MyApp.Worker.Features.Widgets.RetireOversizedWidgets;
 using MyApp.Worker.Workers;
@@ -87,6 +88,7 @@ public sealed class ScheduleTests
         RetireWidgetsWorker worker = new(
             provider.GetRequiredService<IServiceScopeFactory>(),
             clock,
+            Options.Create(new RetireWidgetsOptions()),
             provider.GetRequiredService<ILogger<RetireWidgetsWorker>>());
 
         await worker.StartAsync(CancellationToken.None);
@@ -95,17 +97,33 @@ public sealed class ScheduleTests
         {
             // Advanced repeatedly rather than once, because the loop has to be sitting in
             // WaitForNextTickAsync before a tick means anything, and nothing in BackgroundService says
-            // when that is.
+            // when that is. PeriodicTimer also coalesces ticks, so a burst of advances with nothing in
+            // between collapses into a single dispatch.
             //
-            // The millisecond is real and is load-bearing: PeriodicTimer coalesces ticks, so a burst of
-            // advances with only Task.Yield between them all collapses into one dispatch and the loop
-            // never gets scheduled in between. Yielding to the thread pool for an actual moment is what
-            // lets each iteration run. The five-minute interval stays fake — this waits milliseconds,
-            // not minutes.
-            for (int attempt = 0; attempt < 200 && recorder.Dispatches < dispatches; attempt++)
+            // The wait is on the recorder rather than on a clock, and it is bounded: if the dispatches
+            // never arrive the test fails on the timeout instead of hanging. The five-minute interval
+            // stays fake throughout.
+            using CancellationTokenSource advancing = new();
+
+            Task advancer = Task.Run(
+                async () =>
+                {
+                    while (!advancing.IsCancellationRequested)
+                    {
+                        clock.Advance(TimeSpan.FromMinutes(5));
+                        await Task.Delay(TimeSpan.FromMilliseconds(1), advancing.Token).ConfigureAwait(false);
+                    }
+                },
+                advancing.Token);
+
+            try
             {
-                clock.Advance(TimeSpan.FromMinutes(5));
-                await Task.Delay(TimeSpan.FromMilliseconds(1));
+                await recorder.Reached(dispatches).WaitAsync(TimeSpan.FromSeconds(30));
+            }
+            finally
+            {
+                await advancing.CancelAsync();
+                await Task.WhenAny(advancer, Task.CompletedTask);
             }
         }
         finally
@@ -135,7 +153,9 @@ public sealed class ScheduleTests
     {
         private readonly Lock _gate = new();
         private readonly HashSet<Guid> _scopes = [];
+        private readonly TaskCompletionSource _reached = new(TaskCreationOptions.RunContinuationsAsynchronously);
         private int _dispatches;
+        private int _target = int.MaxValue;
 
         public int Dispatches
         {
@@ -147,12 +167,33 @@ public sealed class ScheduleTests
             get { lock (_gate) { return _scopes.Count; } }
         }
 
+        /// <summary>Completes once the given number of dispatches has been seen.</summary>
+        public Task Reached(int dispatches)
+        {
+            lock (_gate)
+            {
+                _target = dispatches;
+
+                if (_dispatches >= _target)
+                {
+                    _reached.TrySetResult();
+                }
+            }
+
+            return _reached.Task;
+        }
+
         public void Record(Guid scopeId)
         {
             lock (_gate)
             {
                 _dispatches++;
                 _scopes.Add(scopeId);
+
+                if (_dispatches >= _target)
+                {
+                    _reached.TrySetResult();
+                }
             }
         }
     }

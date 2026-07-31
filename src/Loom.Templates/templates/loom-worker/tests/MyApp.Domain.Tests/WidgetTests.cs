@@ -32,6 +32,7 @@ public sealed class WidgetTests
     {
         Result<Widget> created = Widget.Create("bolt", 0);
 
-        await Assert.That(created.Error.Category).IsEqualTo(ErrorCategory.Invalid);
+        await Assert.That(created.IsFailure).IsTrue();
+        await Assert.That(created.Error.Code).IsEqualTo(WidgetErrors.SizeMustBePositive.Code);
     }
 }
