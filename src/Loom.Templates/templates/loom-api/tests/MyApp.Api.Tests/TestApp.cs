@@ -47,7 +47,9 @@ public sealed class TestApp : IAsyncDisposable
         using (IServiceScope scope = factory.Services.CreateScope())
         {
             AppDbContext database = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-            await database.Database.EnsureCreatedAsync();
+            // The schema comes from the same migrations a deployment applies, so the tests exercise the path
+            // that ships rather than one EF derives from the model.
+            await database.Database.MigrateAsync();
         }
 
         NpgsqlConnection resetConnection = new(container.GetConnectionString());

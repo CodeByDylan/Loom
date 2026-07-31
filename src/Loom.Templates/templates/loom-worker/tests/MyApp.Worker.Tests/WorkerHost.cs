@@ -50,7 +50,9 @@ public sealed class WorkerHost : IAsyncDisposable
 
         using (IServiceScope scope = provider.CreateScope())
         {
-            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.EnsureCreatedAsync();
+            // The schema comes from the same migrations a deployment applies, so the tests exercise the
+            // path that ships rather than one EF derives from the model.
+            await scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.MigrateAsync();
         }
 
         NpgsqlConnection resetConnection = new(container.GetConnectionString());

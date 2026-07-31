@@ -1,0 +1,8 @@
+# Migrations are emitted by the tooling, not written by hand, so the repository's style rules do not
+# apply to them. Reformatting them would only be undone by the next generated migration.
+[*.cs]
+generated_code = true
+dotnet_analyzer_diagnostic.severity = none
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.IDE0300.severity = none
+dotnet_diagnostic.IDE0028.severity = none
