@@ -47,8 +47,6 @@
         <PackageVersion Include="Testcontainers.PostgreSql" Version="4.13.0" />
         <PackageVersion Include="Respawn" Version="7.0.0" />
         <PackageVersion Include="NetArchTest.Rules" Version="1.3.2" />
-        <!-- Lets the schedule be tested by advancing a clock rather than by sleeping. -->
-        <PackageVersion Include="Microsoft.Extensions.TimeProvider.Testing" Version="10.8.0" />
     </ItemGroup>
 
 </Project>

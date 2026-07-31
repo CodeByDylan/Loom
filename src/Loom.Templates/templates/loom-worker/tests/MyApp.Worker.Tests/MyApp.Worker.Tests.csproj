@@ -9,7 +9,6 @@
         <PackageReference Include="Testcontainers.PostgreSql" />
         <PackageReference Include="Respawn" />
         <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL" />
-        <PackageReference Include="Microsoft.Extensions.TimeProvider.Testing" />
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
         <PackageReference Include="CodeByDylan.Loom.Handlers" />
         <PackageReference Include="CodeByDylan.Loom.Persistence.EntityFrameworkCore" />
