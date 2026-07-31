@@ -25,25 +25,41 @@ internal abstract class SqliteHost : IAsyncDisposable
     /// <summary>Opens the database, registers the context and creates the schema.</summary>
     /// <typeparam name="TContext">The context under test.</typeparam>
     /// <param name="configure">Registers whatever else the host needs.</param>
+    /// <remarks>
+    /// Cleans up after itself if any step throws. The factory that calls this never hands the host back
+    /// on failure, so nothing else is in a position to dispose it and the connection would stay open for
+    /// the rest of the run. The field is assigned before the connection is opened for the same reason.
+    /// </remarks>
     private protected async Task InitialiseAsync<TContext>(Action<IServiceCollection> configure)
         where TContext : DbContext
     {
+        // Held locally as well so the registration below closes over the connection rather than over
+        // this host.
         SqliteConnection connection = new("Filename=:memory:");
-        await connection.OpenAsync();
         _connection = connection;
 
-        ServiceCollection services = new();
-        services.AddSingleton<Recorder>();
-        services.AddDbContext<TContext>((serviceProvider, options) => options
-            .UseSqlite(connection)
-            .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
+        try
+        {
+            await connection.OpenAsync();
 
-        configure(services);
+            ServiceCollection services = new();
+            services.AddSingleton<Recorder>();
+            services.AddDbContext<TContext>((serviceProvider, options) => options
+                .UseSqlite(connection)
+                .AddInterceptors(serviceProvider.GetRequiredService<DomainEventInterceptor>()));
 
-        _provider = services.BuildServiceProvider();
+            configure(services);
 
-        using IServiceScope scope = _provider.CreateScope();
-        await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync();
+            _provider = services.BuildServiceProvider();
+
+            using IServiceScope scope = _provider.CreateScope();
+            await scope.ServiceProvider.GetRequiredService<TContext>().Database.EnsureCreatedAsync();
+        }
+        catch
+        {
+            await DisposeAsync();
+            throw;
+        }
     }
 
     internal Recorder Recorder => Resolve<Recorder>();
