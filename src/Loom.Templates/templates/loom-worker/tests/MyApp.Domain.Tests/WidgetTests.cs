@@ -49,7 +49,7 @@ public sealed class WidgetTests
     public async Task Retiring_A_Retired_Widget_Reports_A_Conflict()
     {
         // The invariant the slice leans on: a widget retired by something else between the query and
-        // the loop reports Conflict, which the pass counts as information rather than failure.
+        // the loop reports Conflict, which the slice counts as information rather than failure.
         Widget widget = Widget.Create("bolt", 3).Value;
         _ = widget.Retire();
 
