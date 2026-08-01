@@ -53,14 +53,16 @@ public sealed class ResultHttpExtensionsTests
     [Test]
     public async Task A_Problem_Can_Be_Changed_Before_Being_Returned()
     {
-        // This is the escape hatch that replaces an options type.
+        // This is the escape hatch that replaces an options type. Reading back the assigned title
+        // would assert the assignment, which cannot fail — what is worth pinning is that changing one
+        // member leaves the mapped status and the code extension standing.
         ProblemDetails problem = Errors.NotFound("orders.not_found", "No such order.").ToProblemDetails();
 
         problem.Title = "Nowhere to be found";
         problem.Extensions["shard"] = 7;
 
-        await Assert.That(problem.Title).IsEqualTo("Nowhere to be found");
         await Assert.That(problem.Status).IsEqualTo(404);
+        await Assert.That(problem.Extensions[ResultHttpExtensions.CodeMember]).IsEqualTo("orders.not_found");
     }
 
     [Test]

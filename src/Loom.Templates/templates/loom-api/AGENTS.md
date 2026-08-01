@@ -69,7 +69,7 @@ dotnet format --verify-no-changes   # confirms nothing is left unformatted
 ## 4. Architecture
 
 - **One file per operation:** `Features/<Aggregate>/<Operation>.cs`.
-- **One namespace per slice:** `namespace MyApp.Features.Orders.CreateOrder;`. This is what makes slice isolation mechanically enforceable (§11) rather than a review convention.
+- **One namespace per slice, rooted in the host project's namespace:** `namespace MyApp.Api.Features.Orders.CreateOrder;` in an API, `MyApp.Worker.Features…` in a worker. The root matters: the §11 enforcement watches `<HostAssembly>.Features.`, so a slice namespaced without the archetype segment sits outside the check that makes isolation mechanical rather than a review convention.
 - **A slice over ~250 lines means the operation is doing too much.** Split the operation, not the file. A genuine helper gets a sibling file in the same folder, never a new folder.
 - **`Features/<Aggregate>/_Shared.cs`** is the only permitted cross-slice sharing, and only within one aggregate.
 - **Entry points are thin adapters.** An endpoint, a `BackgroundService`, or a CLI command validates nothing, decides nothing, and queries nothing — it adapts input and dispatches to a handler.
@@ -122,7 +122,7 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 - **A failed result carries exactly one error.** Several validation failures are one `ValidationError` whose metadata is a field→messages map, which maps straight onto the ProblemDetails `errors` extension.
 - **Never serialize a `Result`.** It is a control-flow type; response types cross the wire. Serializers reflect over public members, and reading `Value` on a failure throws from inside the serializer.
 - **Never ignore a returned `Result`.** Write `_ = ...` when the outcome really is of no interest — at which point you have said so, which is the whole point. Do not silence the rule to avoid the sentence.
-- **`LOOM0001` covers a `Result` discarded directly, and only that.** A statement whose value is a `Result` — including an awaited one — fails the build, since warnings are errors here. Two cases it does not see: a `Task<Result>` that is never awaited, and a `Result` discarded as the body of a void-returning lambda. Those still need reading for, so do not treat a clean build as proof that no outcome was dropped.
+- **`LOOM0001` covers a `Result` discarded directly, and only that.** A statement whose value is a `Result` — including an awaited one, and including inside a lambda body — fails the build, since warnings are errors here. The one case it does not see: a `Task<Result>` that is never awaited, because the statement's value is the task. That still needs reading for, so do not treat a clean build as proof that no outcome was dropped.
 - **Category-to-transport mapping comes from a Loom package, never inline in a slice.** In an API that is `Loom.Results.AspNetCore`: `result.ToHttpResult()`. If a project wants different titles or extra members, it builds the problem details with `ToProblemDetails()` and changes it — the package has no options type on purpose.
 
 ## 8. Configuration and authorization
@@ -169,14 +169,14 @@ protected override void ConfigureConventions(ModelConfigurationBuilder configura
 
 `tests/MyApp.<Archetype>.Tests` asserts the one rule that needs a built container:
 
-5. Every `IHandler<,>` implementation, and every validator, resolves from the application's own service graph. Metadata cannot answer this — a registration exists only once the container is built — so it lives beside the tests that have one. Discover both by reflection; naming a handler proves only that handler is registered.
+5. Every handler implementation — both `IHandler<,>` and the void `IHandler<>` — and every validator, resolves from the application's own service graph. Metadata cannot answer this — a registration exists only once the container is built — so it lives beside the tests that have one. Discover both by reflection; naming a handler proves only that handler is registered.
 
 A structural rule that is not in this list is a rule that will erode. If you add a structural
 rule to this file, add its test.
 
 ## 12. Adding a slice
 
-1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace MyApp.Features.<Aggregate>.<Operation>;`.
+1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace <HostProject>.Features.<Aggregate>.<Operation>;` — `MyApp.Api.Features…` in an API, `MyApp.Worker.Features…` in a worker, never `MyApp.Features…` (§4).
 2. Write the request, the response, the validator, and the handler in that file.
 3. Register the handler and its decorator chain.
 4. Wire the entry point (see the archetype section below).

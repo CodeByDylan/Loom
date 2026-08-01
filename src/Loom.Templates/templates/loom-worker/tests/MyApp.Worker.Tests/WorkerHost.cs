@@ -65,6 +65,9 @@ public sealed class WorkerHost : IAsyncDisposable
         {
             DbAdapter = DbAdapter.Postgres,
             SchemasToInclude = ["public"],
+            // Migrations put the schema there; a reset that swept their history away would make the
+            // next MigrateAsync replay them against tables that already exist.
+            TablesToIgnore = [new Respawn.Graph.Table("__EFMigrationsHistory")],
         });
 
         return new WorkerHost(container, provider, respawner, resetConnection);

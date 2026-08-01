@@ -39,7 +39,7 @@ public sealed class DomainPurityTests
     }
 
     [Test]
-    public async Task Entities_Are_Sealed()
+    public async Task Public_Domain_Classes_Are_Sealed()
     {
         ArchTestResult result = Types.InAssembly(Domain)
             .That().AreClasses().And().ArePublic()

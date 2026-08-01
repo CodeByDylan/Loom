@@ -8,7 +8,7 @@
              scaffolded solution references the Loom it shipped beside. The value here is what the
              template builds against in place — it must be a version that exists on nuget.org, because
              `dotnet ef` has to be able to generate a migration against this tree. -->
-        <LoomVersion>0.2.0</LoomVersion>
+        <LoomVersion>0.3.0</LoomVersion>
     </PropertyGroup>
 
     <ItemGroup Label="Loom">

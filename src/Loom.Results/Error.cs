@@ -21,6 +21,14 @@ public record Error(ErrorCategory Category, string Code, string Message);
 /// An expected failure carrying structured metadata about what went wrong.
 /// </summary>
 /// <typeparam name="TMetadata">The type of the metadata carried by the error.</typeparam>
+/// <remarks>
+/// Equality is the record default: <paramref name="Metadata" /> compares by
+/// <see cref="EqualityComparer{T}" />, which for a collection type means by reference. Two errors
+/// built from identical inputs are therefore not equal when their metadata is a dictionary — a test
+/// asserting equality on a <see cref="ValidationError" /> should compare <paramref name="Code" /> and
+/// the metadata's contents instead. Discriminating on <paramref name="Code" /> is the documented
+/// contract; whole-error equality is not.
+/// </remarks>
 /// <param name="Category">The semantic kind of the failure.</param>
 /// <param name="Code">A stable, machine-readable identifier for the failure.</param>
 /// <param name="Message">A human-readable description of what went wrong.</param>
