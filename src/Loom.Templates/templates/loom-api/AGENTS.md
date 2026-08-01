@@ -176,7 +176,7 @@ rule to this file, add its test.
 
 ## 12. Adding a slice
 
-1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace <HostProject>.Features.<Aggregate>.<Operation>;` — `MyApp.Api.Features.Orders.CreateOrder`, not `MyApp.Features…` (§4).
+1. Create `Features/<Aggregate>/<Operation>.cs` with `namespace <HostProject>.Features.<Aggregate>.<Operation>;` — `MyApp.Api.Features…` in an API, `MyApp.Worker.Features…` in a worker, never `MyApp.Features…` (§4).
 2. Write the request, the response, the validator, and the handler in that file.
 3. Register the handler and its decorator chain.
 4. Wire the entry point (see the archetype section below).
