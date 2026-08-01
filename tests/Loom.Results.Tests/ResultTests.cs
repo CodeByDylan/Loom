@@ -48,6 +48,25 @@ public sealed class ResultTests
     }
 
     [Test]
+    public async Task Errors_With_Dictionary_Metadata_Compare_By_Reference()
+    {
+        // The record default, pinned because it surprises: identical inputs, distinct dictionaries,
+        // unequal errors. The documented contract is discriminating on Code, not whole-error equality
+        // — this test is the doc's claim made checkable.
+        ValidationError first = new("orders.invalid", "Invalid.", new Dictionary<string, string[]>
+        {
+            ["sku"] = ["Unknown."],
+        });
+        ValidationError second = new("orders.invalid", "Invalid.", new Dictionary<string, string[]>
+        {
+            ["sku"] = ["Unknown."],
+        });
+
+        await Assert.That(first == second).IsFalse();
+        await Assert.That(first.Code).IsEqualTo(second.Code);
+    }
+
+    [Test]
     public async Task ToString_Describes_The_Outcome()
     {
         await Assert.That(Result.Success.ToString()).IsEqualTo("Success");

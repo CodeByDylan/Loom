@@ -24,6 +24,28 @@ public sealed class WidgetSliceTests
     }
 
     [Test]
+    public async Task A_Response_Outside_The_Slices_Is_Still_A_Problem()
+    {
+        // The rule is every non-2xx response, not every slice failure. A route no slice owns never
+        // reaches ToHttpResult(), so only the status-code middleware stands between this request and
+        // a bodyless 404 — which is exactly what came back before Program.cs added it.
+        using HttpClient client = _app.Client();
+
+        HttpResponseMessage response = await client.GetAsync(new Uri("/no-such-route", UriKind.Relative));
+
+        await Assert.That(response.StatusCode).IsEqualTo(HttpStatusCode.NotFound);
+        await Assert.That(response.Content.Headers.ContentType?.MediaType)
+            .IsEqualTo("application/problem+json");
+
+        // The media type is a header; only parsing the body proves a problem document is in it.
+        Microsoft.AspNetCore.Mvc.ProblemDetails? problem =
+            await response.Content.ReadFromJsonAsync<Microsoft.AspNetCore.Mvc.ProblemDetails>();
+
+        await Assert.That(problem).IsNotNull();
+        await Assert.That(problem!.Status).IsEqualTo(404);
+    }
+
+    [Test]
     public async Task A_Widget_Is_Created_And_Read_Back()
     {
         using HttpClient client = _app.Client();

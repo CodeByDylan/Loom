@@ -52,7 +52,8 @@ public sealed class RegistrationTests
                 .Where(type => type is { IsClass: true, IsAbstract: false })
                 .SelectMany(type => type.GetInterfaces())
                 .Where(contract => contract.IsGenericType
-                    && contract.GetGenericTypeDefinition() == typeof(IHandler<,>))
+                    && (contract.GetGenericTypeDefinition() == typeof(IHandler<,>)
+                        || contract.GetGenericTypeDefinition() == typeof(IHandler<>)))
                 .Distinct(),
         ];
 

@@ -48,8 +48,9 @@ generated output: a `using` for a namespace that does not exist (`Loom.Results.A
 identifier, not a namespace), an Aspire resource name derived from the project name and therefore
 invalid for any name containing a dot, and the class the Aspire SDK generates for a project reference,
 which turns dots into underscores and so cannot be produced by the template engine's name substitution
-alone. CI now scaffolds and builds a solution called `Acme.Billing` on every push — the dotted name is
-the case that breaks and the one people actually use.
+alone. CI now scaffolds and builds every archetype under three names on every push — `Acme.Billing`,
+`My-App` and `123orders` — because the dotted name is the case that breaks and the one people actually
+use, and the other two catch what a name that is already a valid identifier path hides.
 
 `Loom.Outbox.Diagnostics` shipped as `OutboxAdministration<TContext>` **inside
 `Loom.Persistence.EntityFrameworkCore`**, for the same reason as the logging decorator: it needs the

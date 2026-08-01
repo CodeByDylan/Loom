@@ -112,6 +112,32 @@ public sealed class TemplateManifestTests
     }
 
     [Test]
+    public async Task Every_Template_Pins_The_Same_Loom_Version()
+    {
+        // Directory.Packages.props legitimately differs between archetypes — a worker has no
+        // AspNetCore packages — so the byte-for-byte check below cannot cover it. The one line that
+        // must not drift is the Loom pin: two archetypes naming different Loom versions would
+        // scaffold solutions that disagree about the API they were written against.
+        //
+        // Equality with the latest release is deliberately not asserted. At tag time the packages for
+        // that tag are not on nuget.org yet, so the in-repo pin lags one release by design (§8) and a
+        // test demanding the latest tag would fail exactly when releasing.
+        string[] pins =
+        [
+            .. Templates()
+                .Order(StringComparer.Ordinal)
+                .Select(template => Path.Combine(TemplatesRoot, template, "Directory.Packages.props"))
+                .Select(File.ReadAllText)
+                .Select(content => System.Text.RegularExpressions.Regex
+                    .Match(content, "<LoomVersion>([^<]+)</LoomVersion>").Groups[1].Value),
+        ];
+
+        await Assert.That(pins.Length).IsGreaterThanOrEqualTo(2);
+        await Assert.That(pins.Distinct().Count()).IsEqualTo(1);
+        await Assert.That(pins[0]).IsNotEmpty();
+    }
+
+    [Test]
     public async Task Every_Template_Starts_From_The_Same_Root_Configuration()
     {
         string[] shared = ["Directory.Build.props", "global.json", ".editorconfig", ".gitignore"];
