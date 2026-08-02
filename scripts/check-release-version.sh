@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Confirms the produced packages carry the version the tag asked for.
+# Confirms the produced packages carry the version the tag asked for — in their names, and inside the
+# templates package, where the version a scaffolded solution restores is written into the payload.
 #
 # MinVer is configured rather than magical. A wrong tag prefix, a shallow clone, or a missing tag all
 # yield a development version like 0.0.0-alpha.0.17 while everything else looks fine — and pushing
@@ -62,9 +63,61 @@ for package in "${packages[@]}"; do
     fi
 done
 
+# The templates package carries a version no file name reveals. Pack rewrites <LoomVersion> in each
+# archetype's Directory.Packages.props to the version being released, and that pin is what a
+# scaffolded solution restores — so the package can be named correctly and still be unusable. It went
+# wrong exactly that way: 0.2.1, 0.3.0 and 0.3.1 all shipped pinned to 1.0.0, a version that has never
+# existed, because MinVer had not yet run when the rewrite read $(PackageVersion). Every `dotnet new
+# loom-api` from those packages fails to restore, and nothing here noticed, because the names were right.
+templates=("$directory"/CodeByDylan.Loom.Templates.*.nupkg)
+
+if [[ ${#templates[@]} -ne 1 ]]; then
+    printf 'check-release: expected one templates package in %s, found %s\n' "$directory" "${#templates[@]}" >&2
+    exit 1
+fi
+
+templates_package="${templates[0]}"
+
+# Required rather than worked around. Reading the pin is the whole point of this section, and a check
+# that quietly skips when a tool is missing is worse than one that was never written.
+if ! command -v unzip >/dev/null 2>&1; then
+    printf 'check-release: unzip is needed to read the pinned version out of %s\n' "$(basename "$templates_package")" >&2
+    exit 1
+fi
+
+pinned=$(unzip -Z1 "$templates_package" 'content/templates/*/Directory.Packages.props' 2>/dev/null)
+
+if [[ -z "$pinned" ]]; then
+    printf 'check-release: %s carries no template Directory.Packages.props to pin\n' "$(basename "$templates_package")" >&2
+    exit 1
+fi
+
+archetypes=0
+
+while IFS= read -r member; do
+    archetypes=$((archetypes + 1))
+
+    # One element, read as a whole rather than by line, so a value split across lines cannot pass.
+    version=$(unzip -p "$templates_package" "$member" | tr -d '\n' | grep -oE '<LoomVersion>[^<]*</LoomVersion>')
+    version=${version#<LoomVersion>}
+    version=${version%</LoomVersion>}
+
+    if [[ -z "$version" ]]; then
+        printf 'check-release: %s names no <LoomVersion>\n' "$member" >&2
+        failures=$((failures + 1))
+        continue
+    fi
+
+    if [[ "$version" != "$expected" ]]; then
+        printf "check-release: %s pins Loom '%s' but the tag asks for '%s'\n" "$member" "$version" "$expected" >&2
+        failures=$((failures + 1))
+    fi
+done <<< "$pinned"
+
 if [[ "$failures" -gt 0 ]]; then
-    printf 'check-release: %s package(s) do not match the tag; nothing was published\n' "$failures" >&2
+    printf 'check-release: %s check(s) failed against the tag; nothing was published\n' "$failures" >&2
     exit 1
 fi
 
 printf 'check-release: all %s package(s), symbols included, are version %s\n' "${#packages[@]}" "$expected"
+printf 'check-release: the templates package pins all %s archetype(s) at %s\n' "$archetypes" "$expected"
