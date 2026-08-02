@@ -35,7 +35,12 @@
         <PinTemplatesToPackageVersion Condition="'$(PinTemplatesToPackageVersion)' == ''">false</PinTemplatesToPackageVersion>
     </PropertyGroup>
 
-    <Target Name="PinTemplatesToThisVersion" BeforeTargets="_GetPackageFiles">
+    <!-- DependsOnTargets="MinVer" is load-bearing. MinVer appends itself to GenerateNuspecDependsOn,
+         which puts it *after* _GetPackageFiles, and a plain `dotnet pack` only gets away with that
+         because the build already ran MinVer before CoreCompile. When pack is told not to build —
+         which is how release.yml packs — nothing has run it yet, so $(PackageVersion) is still the
+         SDK's default 1.0.0, and the templates get pinned to a version that was never published. -->
+    <Target Name="PinTemplatesToThisVersion" BeforeTargets="_GetPackageFiles" DependsOnTargets="MinVer">
         <PropertyGroup>
             <_PinnedTemplates>$(IntermediateOutputPath)pinned\</_PinnedTemplates>
         </PropertyGroup>
