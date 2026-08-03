@@ -1,0 +1,55 @@
+featured = true
+weight = 0
+
+# Identifiers carry the CodeByDylan. prefix; "Loom." cannot be reserved on nuget.org.
+# Loom.Results.Analyzers is omitted deliberately: it ships inside CodeByDylan.Loom.Results.
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Results"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Entities"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Specifications"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Paging"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Handlers.Abstractions"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Handlers"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Handlers.FluentValidation"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Results.AspNetCore"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Persistence.EntityFrameworkCore"
+
+[[release.packages]]
+registry = "nuget"
+id = "CodeByDylan.Loom.Templates"
+
+[[links]]
+url = "https://github.com/CodeByDylan/Loom/tree/main/docs/agents"
+label = "Guidance for projects built on Loom"
+label_nl = "Richtlijnen voor projecten op Loom"
+
+[[links]]
+url = "https://github.com/CodeByDylan/Loom/tree/main/samples"
+label = "Sample ordering API"
+label_nl = "Voorbeeld-API"
+
