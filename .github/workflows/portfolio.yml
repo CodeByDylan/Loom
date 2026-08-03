@@ -1,0 +1,27 @@
+name: Update portfolio
+
+# Rebuilds dylandebeer.nl, which reads this repo's .dylan directory at build time.
+on:
+  push:
+    tags: ['v*']
+    branches: [main]
+    paths: ['.dylan/**']
+
+concurrency:
+  group: update-portfolio
+  cancel-in-progress: true
+
+jobs:
+  rebuild:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger a site rebuild
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then
+            echo "VERCEL_DEPLOY_HOOK is not set; skipping."
+            exit 0
+          fi
+          curl -fsS -X POST "$HOOK" > /dev/null
+          echo "Portfolio rebuild triggered."
