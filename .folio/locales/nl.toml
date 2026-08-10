@@ -1,0 +1,5 @@
+project.name    = "Loom"
+project.tagline = "Tien .NET-pakketten die de saaie keuzes één keer maken"
+
+link.docs    = "Richtlijnen voor projecten op Loom"
+link.package = "Pakketten op NuGet"
