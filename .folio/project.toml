@@ -1,0 +1,28 @@
+version = 1
+
+[project]
+slug    = "loom"
+status  = "active"
+role    = "author"
+started = "2026-07"
+tags    = ["csharp", "dotnet", "tooling"]
+
+[[links]]
+type = "docs"
+url  = "https://github.com/CodeByDylan/Loom/tree/main/docs/agents"
+
+[[links]]
+type = "package"
+url  = "https://www.nuget.org/packages?q=CodeByDylan.Loom"
+
+[[sections]]
+id   = "overview"
+file = "overview.md"
+
+[[sections]]
+id   = "story"
+file = "story.md"
+
+[[sections]]
+id   = "analyzer"
+file = "analyzer.md"
